@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-10-22",
+  "sourceUrl": "https://map.ngii.go.kr/ms/map/Aerial.do",
+  "query": "명지대학교 · 공식 공개 검색 화면",
+  "records": [
+    {"catalogYear":1997,"objectId":2762727,"zoneCode":"199710A0302","course":"25","photo":"12","previewViewed":true,"captureMonth":null,"captureDay":null,"timeResolution":"catalog-year-only","observation":"남가좌동 대학의 운동장과 선형 교사·저층 주거지 확인. 프레임 날짜 판독·정합 미완료로 3D 전사하지 않음."},
+    {"catalogYear":2006,"objectId":2748690,"zoneCode":"200611A0302","course":"25","photo":"12","previewViewed":true,"captureMonth":null,"captureDay":null,"timeResolution":"catalog-year-only","observation":"남가좌동 운동장·주차 공간·북측 곡선형 지붕 확인. 건물 식별·촬영 월·정합은 별도 검증 필요. 3D 전사하지 않음."},
+    {"catalogYear":2016,"objectId":2700614,"zoneCode":"201606A0101","course":"27","photo":"15","previewViewed":false,"captureMonth":null,"captureDay":null,"timeResolution":"catalog-year-only","observation":"목록과 선택 결과만 확인. 미리보기 영상이 표시되지 않아 외형 관찰·3D 반영 없음."}
+  ],
+  "limits":"zoneCode의 숫자를 촬영 월로 변환하지 않음. 미리보기 좌표 정합과 프레임 날짜 확인 전에는 기존 관측 사이를 보간하거나 월별 형상을 생성하지 않음. 사진 원본·화면 캡처는 재배포하지 않음."
+}
