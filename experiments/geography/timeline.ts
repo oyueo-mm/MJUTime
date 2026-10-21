@@ -1,6 +1,7 @@
 import {sources,type SourceId} from './history'
-import type {Point} from './spatial'
+import {mapData,type Point} from './spatial'
 import additionalAerial from './data/additional-aerial.json'
+import {campusRegister,legacyCampus,registered,physicallyKnown,registerSource} from './campus-evidence'
 
 export const monthIndex=(year:number,month=1)=>year*12+month-1
 export const splitMonth=(value:number)=>({year:Math.floor(value/12),month:value%12+1})
@@ -22,6 +23,7 @@ export const projectSources={
   hongeun2:'https://cleanup.seoul.go.kr/cafe/mainIndx/cleanup-prtnelapse/vscr.do?bsnsPk=11410-100010002&cafeId=410100010002o22',
 }
 export const events:TimeEvent[]=[
+  ...campusRegister.map(b=>({id:`register-${b.id}`,date:date(b.completed[0],b.completed[1],b.completed[2]),title:`${b.name} · 대장 준공`,category:'completion' as const,buildingId:b.id,position:mapData.buildings.find(d=>d.id===b.id)!.center as Point,sourceUrl:registerSource,note:`2023.02.15 기준 대학 시설 현황(건축물대장 기준). 지하 ${b.below}층·지상 ${b.above}층. 개관·기관 이전일과 별도입니다. 당시 증축·외관은 미확인, 현 OSM 윤곽·층고 추정 모델입니다.`})),
   {id:'elementary-1976',date:date(1976,2,28),title:'국민학교 남가좌동 이전',category:'relocation',sourceUrl:url('elementary'),position:[-326.8,294.5],note:'남가좌동 50-3 이전. 주소 권역 대표점이며 교사 윤곽 미확인.'},
   {id:'international',date:{year:1984,precision:'period'},title:'국제대학 · 학생회관 사용 시기',category:'occupancy',sourceUrl:url('newspaper'),position:[-271.61,268.89],buildingId:'462990141',note:'1984년 이후 시기 서술, 시작 월·종료일 미확인. 현재 학생회관 위치 참조 점선이며 당시 윤곽 복원이 아닙니다.'},
   {id:'photo-1985',date:date(1985,10,21),title:'1985 항공사진 관측',category:'observation',sourceUrl:url('aerial'),position:[85,-174],note:'국소 전사 지붕 2개·운동장·도로. 해당 촬영 월에만 관측 형상 표시. 월 내 날짜 차이는 미확인.'},
@@ -60,10 +62,11 @@ export function projectStage(id:string,value:number){
   return past.at(-1)?.category??'unknown'
 }
 export const trackedBuildings=[
+  ...legacyCampus.map(b=>({id:b.id,eventId:`register-${b.id}`,color:'#a08b69'})),
   {id:'795977922',eventId:'college-move',color:'#199282'}, {id:'1123968177',eventId:'college-move',color:'#199282'},
   {id:'462990142',eventId:'dorm',color:'#3975cc'}, {id:'462990139',eventId:'library',color:'#3975cc'}, {id:'1127358152',eventId:'mcc',color:'#3975cc'},
 ]
-export const buildingKnown=(id:string,value:number)=>{const b=trackedBuildings.find(b=>b.id===id);return b?knownAfter(events.find(e=>e.id===b.eventId)!.date,value):false}
+export const buildingKnown=(id:string,value:number)=>{if(registered(id))return physicallyKnown(id,value);const b=trackedBuildings.find(b=>b.id===id);return b?knownAfter(events.find(e=>e.id===b.eventId)!.date,value):false}
 /** Playback advances discrete months; never creates historical intermediate geometry. */
 export function advancePlayback(value:number,carry:number,elapsed:number,speed:number){
   const total=carry+Math.max(0,Math.min(elapsed,.25))*speed,steps=Math.floor(total)

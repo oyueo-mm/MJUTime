@@ -21,7 +21,7 @@ describe('monthly timeline and source granularity',()=>{
     expect(aerial.records.find(r=>r.catalogYear===2016)!.previewViewed).toBe(false)
   })
   it('reveals verified buildings at their actual record months, not January',()=>{
-    for(const [id,y,m] of [['462990142',2006,2],['462990139',2010,3],['1127358152',2021,8],['795977922',2001,8]] as const){
+    for(const [id,y,m] of [['462990142',2006,2],['462990139',2010,1],['1127358152',2021,8],['795977922',2001,8]] as const){
       expect(buildingKnown(id,monthIndex(y,m)-1)).toBe(false);expect(buildingKnown(id,monthIndex(y,m))).toBe(true)
     }
     expect(buildingKnown('unverified',MAX_MONTH)).toBe(false)
@@ -68,7 +68,7 @@ describe('camera precision and bounded allocations',()=>{
     const meshes=[...scene.buildings.values()].map(b=>b.mesh),count=scene.group.children.length
     for(let i=0;i<100;i++){scene.update(i%2?MAX_MONTH:MIN_MONTH);scene.tick(i*16)}
     scene.update(monthIndex(2006,1));for(let i=100;i<180;i++)scene.tick(i*16)
-    expect(scene.debug().knownBuildings).toEqual(['795977922','1123968177'])
+    expect(scene.debug().knownBuildings).toEqual(expect.arrayContaining(['462990137','462990141','640328305','462990138','462990140','795977922','1123968177']))
     expect(scene.debug().buildingScales['462990142']).toBeLessThan(.005)
     expect([...scene.buildings.values()].map(b=>b.mesh)).toEqual(meshes);expect(scene.group.children).toHaveLength(count)
     scene.group.traverse(o=>{if(o instanceof THREE.Mesh||o instanceof THREE.Line){o.geometry.dispose();(o.material as THREE.Material).dispose()}})

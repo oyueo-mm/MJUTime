@@ -7,6 +7,7 @@ import {featuresFor,worldRing} from './historical-geometry'
 import {TimeScene} from './time-scene'
 import {events,monthIndex,splitMonth,monthLabel,MIN_MONTH,MAX_MONTH,clampMonth,referenceEpoch,photoMonth,isCurrent,eventsInMonth,eventMonth,dateLabel,advancePlayback,trackedBuildings,buildingKnown,projectStage,projectSources} from './timeline'
 import {defaults,type CameraSettings} from './camera-settings'
+import {registered,registerSource,featureEvidence} from './campus-evidence'
 import './style.css'
 
 document.querySelector('#map')!.innerHTML=`<header><div><small>MJUTime / GEOGRAPHIC STUDY · 실험 브랜치</small><h1>남가좌동에서 홍은동까지</h1><p>건물의 모양보다, 먼저 실제 공간.</p></div><span class="badge">공개 사이트와 분리된 시제품</span></header><main><div id="viewport" aria-label="남가좌동·홍은동 실제 좌표 3D 지도"><div id="labels"></div><div class="map-tools"><button id="home">사선 보기</button><button id="top">위에서 보기 · 북쪽 ↑</button></div><div class="map-caption"><b id="map-state"></b><span>드래그 회전 · 휠 확대 · 우클릭 이동</span></div></div><aside><small>세 시점의 비교</small><nav aria-label="비교 연도">${[1985,2001,2026].map(y=>`<button data-year="${y}" aria-pressed="${y===2026}">${y}</button>`).join('')}</nav><h2 id="year-title"></h2><div id="notes"></div><label id="context-option" hidden><input id="context" type="checkbox"/> 현재 건물·도로 겹쳐 비교 <em>과거 복원 아님</em></label><div class="source-list" id="sources"></div><div class="limits"><b>확인할 수 있는 것과 없는 것</b><p>윤곽은 OSM 관측값, 지형은 저해상도 DEM입니다. 건물 높이·옹벽·절토면·과거 골목은 정확히 복원하지 않았습니다.</p><p>1985·2001 항공영상의 위치·촬영시점 검증이 완료되지 않아 과거 건물은 표식만 제공합니다.</p></div></aside></main><footer><div class="key"><i style="--key:#3975cc"></i>명지대 <i style="--key:#199282"></i>전문대 <i style="--key:#d59539"></i>초등학교 <i style="--key:#8b69bb"></i>중학교 <i style="--key:#c96879"></i>고등학교</div><p>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors · ODbL</a> · 고도: <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">Mapzen Terrain Tiles / USGS SRTM·GMTED</a><br/>고도 배율 1× · 실제 좌표, 높이 일부 추정 · 학교 경계는 현행 OSM 참조</p></footer>`
@@ -81,13 +82,14 @@ for(const b of data.buildings){
   const site=data.sites.find(s=>inRing(b.center,s.p))
   const key=site?.id??'background'
   const shape=new THREE.Shape(b.p.map(([x,z])=>new THREE.Vector2(x,-z)))
-  const g=new THREE.ExtrudeGeometry(shape,{depth:b.height,bevelEnabled:false,steps:1,curveSegments:1})
+  const record=registered(b.id),height=record?record.above*3:b.height // 3m/floor is an explicit height proxy, not a measured elevation.
+  const g=new THREE.ExtrudeGeometry(shape,{depth:height,bevelEnabled:false,steps:1,curveSegments:1})
   g.rotateX(-Math.PI/2)
   // Roof is horizontal; wall bottoms follow the sampled DEM rather than floating.
   // This corrects the seam, not surveyed terraces or retaining walls.
   const foundation=Math.max(heightAt(...b.center as Point),...b.p.map(([x,z])=>heightAt(x,z)))
   const positions=g.getAttribute('position')
-  for(let i=0;i<positions.count;i++){const x=positions.getX(i),z=positions.getZ(i);positions.setY(i,positions.getY(i)<.01?heightAt(x,z)-.2:foundation+b.height)}
+  for(let i=0;i<positions.count;i++){const x=positions.getX(i),z=positions.getZ(i);positions.setY(i,positions.getY(i)<.01?heightAt(x,z)-.2:foundation+height)}
   g.computeVertexNormals()
   if(trackedBuildings.some(d=>d.id===b.id))timeScene.adopt(b.id,g.clone(),b.center as Point,foundation)
   if(inRing(b.center,housingArea.p))timeScene.adoptHousing(b.id,g.clone(),b.center as Point,foundation)
@@ -138,14 +140,15 @@ function clearGroup(group:THREE.Group){
 const photoCache=new Map<number,THREE.Group>()
 let historicalBuilds=0,shownPhoto:1985|2001|null=null
 function renderHistorical(){
-  shownPhoto=photoMonth(timeIndex)??(photoReference?(timeIndex>monthIndex(2001,9)?2001:timeIndex>monthIndex(1985,10)?1985:null):null)
+  shownPhoto=photoMonth(timeIndex)??(timeIndex>=monthIndex(1998,1)&&timeIndex<monthIndex(2001,9)?2001:photoReference?(timeIndex>monthIndex(2001,9)?2001:timeIndex>monthIndex(1985,10)?1985:null):null)
   historicalGroup.children.forEach(g=>g.visible=false)
   if(shownPhoto===null)return
   const existing=photoCache.get(shownPhoto)
-  const setOpacity=(group:THREE.Group)=>group.traverse(o=>{if(o instanceof THREE.Mesh||o instanceof THREE.Line){const m=o.material as THREE.Material;m.transparent=true;m.opacity=photoMonth(timeIndex)?1:.25;m.depthWrite=Boolean(photoMonth(timeIndex))}})
+  const setOpacity=(group:THREE.Group)=>{for(const child of group.children){const evidence=featureEvidence(child.userData.featureId,timeIndex);child.visible=evidence!=='hidden'||photoReference;child.traverse(o=>{if(o instanceof THREE.Mesh||o instanceof THREE.Line){const m=o.material as THREE.Material;m.transparent=true;m.opacity=evidence==='observed'?1:evidence==='reference'?.65:.25;m.depthWrite=evidence==='observed'}})}}
   if(existing){existing.visible=true;setOpacity(existing);return}
-  const group=new THREE.Group();historicalGroup.add(group);photoCache.set(shownPhoto,group);historicalBuilds++
+  const photoGroup=new THREE.Group();historicalGroup.add(photoGroup);photoCache.set(shownPhoto,photoGroup);historicalBuilds++
   for(const feature of featuresFor(shownPhoto)){
+    const group=new THREE.Group();group.userData.featureId=feature.id;photoGroup.add(group)
     const ring=worldRing(feature),color=feature.kind==='roof'?'#bc884b':feature.kind==='field'?'#9eac70':'#8c7060'
     if(feature.kind==='road'){group.add(drapedLine(ring,color,2));continue}
     if(feature.kind==='field'){
@@ -172,7 +175,7 @@ function renderHistorical(){
     group.add(new THREE.Mesh(g,new THREE.MeshStandardMaterial({color,roughness:1,side:THREE.DoubleSide})))
     group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([...ring,ring[0]].map(([x,z])=>new THREE.Vector3(x,base+feature.displayHeight+.05,z))),new THREE.LineBasicMaterial({color:'#79572f'})))
   }
-  setOpacity(group)
+  setOpacity(photoGroup)
 }
 historyFocus.onchange=()=>{
   const id=historyFocus.value,chosen=events.find(e=>e.id===id)
@@ -215,7 +218,7 @@ function update(){
   year=referenceEpoch(timeIndex)
   const current=isCurrent(timeIndex),monthEvents=eventsInMonth(timeIndex),known=trackedBuildings.filter(b=>buildingKnown(b.id,timeIndex))
   const notes=yearNotes[year]
-  renderHistorical();timeScene.update(timeIndex,current||Boolean(photoMonth(timeIndex)))
+  renderHistorical();timeScene.update(timeIndex,current)
   if(timeIndex!==lastUpdatedMonth){
     historyFocus.innerHTML='<option value="">공간 사용·이전·재개발 기록</option>'+events.map(e=>`<option value="${e.id}">${dateLabel(e.date)} ${e.title}</option>`).join('')
     historyFocus.value=monthEvents[0]?.id??'';showEvent();lastUpdatedMonth=timeIndex
@@ -225,7 +228,7 @@ function update(){
   document.querySelector('#year-title')!.textContent=monthEvents[0]?.title??`${monthLabel(timeIndex)} · 월별 형상 미확인`
   const resolution=current?'현재 OSM 수집 월 · 준공일 아님':photoMonth(timeIndex)?'항공사진 국소 전사 · 촬영일만 관측, 월 내 변화 미확인':shownPhoto?`${shownPhoto} 관측 형상 참조 · 선택 월의 존재 증거 아님`:'해당 월 항공 형상 미확인 · 건물 부재를 뜻하지 않음'
   document.querySelector('#time-resolution')!.textContent=`${resolution} · 월말 요약(현재 월은 수집 시점), 월 내 순서 미복원`
-  document.querySelector('#notes')!.innerHTML=`<p>연혁 확인 건물은 개관 이후 존치를 가정하고 현재 OSM 윤곽으로 표시합니다. 월별 외형 변화는 미확인이며 날짜 사이 공정률을 보간하지 않습니다. 등장·되감기는 상태 표현 애니메이션입니다.</p><details><summary>기존 ${year} 조사 기록 · 선택 월의 관측 아님</summary>${notes.paragraphs.map(p=>`<p>${p}</p>`).join('')}</details>`
+  document.querySelector('#notes')!.innerHTML=`<p>황갈색 건물: 준공 기록 이후 존치 가정 + 현재 OSM 윤곽·층고 3m 추정. 황토색 낮은 매스: 항공사진 전사(표현 높이 3m). 반투명 운동장·도로: 1997 열람과 2001 전사 사이 참조 추정. 서로 다른 근거이며 빈 곳은 부재가 아닌 미조사입니다.</p><p><a href="${registerSource}" target="_blank" rel="noopener">공식 건축물 현황 · 준공일/층수 ↗</a></p><details><summary>기존 ${year} 조사 기록 · 선택 월의 관측 아님</summary>${notes.paragraphs.map(p=>`<p>${p}</p>`).join('')}</details>`
   document.querySelector('#month-events')!.innerHTML=monthEvents.map(e=>`<button data-event="${e.id}">${dateLabel(e.date)} · ${e.title}</button>`).join('')
   document.querySelectorAll<HTMLButtonElement>('[data-event]').forEach(b=>b.onclick=()=>{historyFocus.value=b.dataset.event!;showEvent(true)})
   document.querySelector('#sources')!.innerHTML='<b>관련 자료와 기존 조사 출처</b>'+monthEvents.map(e=>`<a href="${e.sourceUrl}" target="_blank" rel="noopener">${e.title} · 원자료 ↗</a>`).join('')+notes.sourceIds.map(id=>`<a href="${sources[id].url}" target="_blank" rel="noopener">${sources[id].title} ↗</a>`).join('')
@@ -241,7 +244,7 @@ function update(){
   markerGroup.children.slice().forEach(o=>{markerGroup.remove(o);if(o instanceof THREE.Mesh){o.geometry.dispose();(o.material as THREE.Material).dispose()}})
   if(current){for(const site of data.sites)addLabel(site.name,'현행 OSM · 높이 일부 추정',site.center as Point,palette[site.id],`https://www.openstreetmap.org/way/${site.osmId}`)}
   else if(photoMonth(timeIndex)){for(const marker of historicalMarkers[photoMonth(timeIndex)!])addLabel(marker.label,marker.note,project(marker.lon,marker.lat),'#ad7430',sources[marker.source].url)}
-  else for(const b of known){const e=events.find(e=>e.id===b.eventId)!;if(e.position)addLabel(e.title,'개관 후 존치 가정 · 현 OSM 윤곽 참조',e.position,b.color,e.sourceUrl)}
+  else for(const b of known){const e=events.find(e=>e.id===b.eventId)!;if(e.position)addLabel(registered(b.id)?.name??e.title,'존재 근거 있음 · 과거 외형은 현 윤곽 추정',e.position,b.color,e.sourceUrl)}
   for(const e of monthEvents)if(e.position)addLabel(e.title,dateLabel(e.date),e.position,'#ca7537',e.sourceUrl,()=>{historyFocus.value=e.id;showEvent(true)})
   if(projectStage('namgajwa1',timeIndex)!=='unknown')addLabel('남가좌1 · 재건축 단계','주소 권역 기호 · 지구계/건물 복원 아님',[-620,195],'#b6803c',projectSources.namgajwa)
   if(projectStage('hongeun2',timeIndex)!=='unknown')addLabel('홍은2 · 현재 단지 범위 참조','선/격자 = 단계 참조 · 월별 공정률 아님',[-148,-377],'#699b8b',projectSources.hongeun2)
