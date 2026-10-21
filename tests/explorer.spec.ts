@@ -36,14 +36,29 @@ test('real WebGL, scenarios A–F, sources, and camera interactions', async ({ p
     await expect.poll(() => page.evaluate(() => window.__MJUTIME_DEBUG__?.().camera)).not.toEqual(rotated)
   } else {
     const session = await page.context().newCDPSession(page)
-    const x = box.x + box.width * .2, y = box.y + box.height * .55
+    // Projected labels are interactive. Start both gestures on uncovered canvas,
+    // rather than a fixed point that can land on a building's DOM label.
+    const { x, y } = await page.evaluate(box => {
+      const canvas = document.querySelector('canvas')!
+      for (const [fx, fy] of [[.2,.3],[.3,.35],[.5,.3],[.2,.65]]) {
+        const x = box.x + box.width * fx, y = box.y + box.height * fy
+        if ([-30,0,30].every(dx => document.elementFromPoint(x + dx, y) === canvas)) return {x,y}
+      }
+      throw new Error('No uncovered canvas area for touch gestures')
+    }, box)
     await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 0 }] })
-    for (let i = 1; i <= 8; i++) await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + i * 8, y: y + i * 2, id: 0 }] })
+    for (let i = 1; i <= 8; i++) {
+      await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + i * 8, y: y + i * 2, id: 0 }] })
+      await page.waitForTimeout(30)
+    }
     await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
     await expect.poll(() => page.evaluate(() => window.__MJUTIME_DEBUG__?.().camera)).not.toEqual(initial)
     const rotated = await page.evaluate(() => window.__MJUTIME_DEBUG__?.().camera)
     await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x - 30, y, id: 0 }, { x: x + 30, y, id: 1 }] })
-    for (let i = 1; i <= 8; i++) await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 30 - i * 4, y, id: 0 }, { x: x + 30 + i * 4, y, id: 1 }] })
+    for (let i = 1; i <= 8; i++) {
+      await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 30 - i * 4, y, id: 0 }, { x: x + 30 + i * 4, y, id: 1 }] })
+      await page.waitForTimeout(30)
+    }
     await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
     await expect.poll(() => page.evaluate(() => window.__MJUTIME_DEBUG__?.().camera)).not.toEqual(rotated)
     await session.detach()
