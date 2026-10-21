@@ -1,0 +1,2 @@
+import {defineConfig,devices} from '@playwright/test'
+export default defineConfig({testDir:'.',testMatch:'browser.spec.ts',workers:1,timeout:45000,reporter:'list',outputDir:'../../.preview/geo-test-results',use:{baseURL:'http://127.0.0.1:4188/MJUTime/geography.html',screenshot:'only-on-failure',launchOptions:{args:['--enable-webgl','--enable-unsafe-swiftshader']}},projects:[{name:'desktop',use:{...devices['Desktop Chrome'],viewport:{width:1440,height:1000}}},{name:'mobile',use:{...devices['Pixel 7']}}]})

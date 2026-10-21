@@ -9,7 +9,9 @@
     "build": "npm run typecheck && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "dev:geo": "vite --config experiments/geography/vite.config.ts",
+    "build:geo": "tsc --project experiments/geography/tsconfig.json && vite build --config experiments/geography/vite.config.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.6",
