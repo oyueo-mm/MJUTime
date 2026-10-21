@@ -1,3 +1,4 @@
+import { architecture, type ArchitecturalDefinition } from './architecture'
 export type Campus = 'humanities' | 'nature'
 export type Vec3 = [number, number, number]
 export interface HistoryEvent {
@@ -14,17 +15,12 @@ export interface HistoryEvent {
   evidenceLevel: 'official'
   secondarySourceUrl?: string
 }
-export interface Building {
+export interface Building extends ArchitecturalDefinition {
   id: string
   name: string
   campus: Campus
-  position: Vec3
-  dimensions: Vec3
-  appearance: 'classic' | 'dorm' | 'library' | 'mcc' | 'science' | 'chapel'
   firstVerifiedYear: number | null
-  modelConfidence: 'simplified'
   isConceptual: boolean
-  color: string
 }
 
 export const MIN_YEAR = 1948
@@ -49,15 +45,25 @@ export const events: HistoryEvent[] = [
   { id: 'mcc-opening', year: 2021, month: 8, title: '캠퍼스의 새로운 연결, MCC관', description: '인문캠퍼스 MCC관이 신축되고 봉헌예배가 열렸습니다. 교육 공간인 베리타스홀과 상업·복지 공간인 코이노니아홀이 함께하는 교육복합시설입니다.', campus: 'humanities', buildingId: 'mcc', position: [6.4, 3.7, 3.5], category: 'building', sourceUrl: 'https://emc.mju.ac.kr/mjukr/9418/subview.do', evidenceLevel: 'official' },
 ]
 
-const common = { modelConfidence: 'simplified' as const, isConceptual: false }
-export const buildings: Building[] = [
-  { ...common, id: 'dorm', name: '생활관', campus: 'humanities', position: [-7, 0, -4.5], dimensions: [3.6, 5.8, 3.2], appearance: 'dorm', firstVerifiedYear: 2006, color: '#d5b9a0' },
-  { ...common, id: 'library', name: '방목학술정보관', campus: 'humanities', position: [0, 0, -6], dimensions: [6, 4.4, 3.7], appearance: 'library', firstVerifiedYear: 2010, color: '#e5dccd' },
-  { ...common, id: 'mcc', name: 'MCC관', campus: 'humanities', position: [6.4, 0, 3.5], dimensions: [6, 2.5, 4.6], appearance: 'mcc', firstVerifiedYear: 2021, color: '#e7e5dd' },
-  { ...common, id: 'h-main', name: '기본 건물 군 · 개념 모형', campus: 'humanities', position: [6.5, 0, -4.8], dimensions: [5, 4.4, 3.1], appearance: 'classic', firstVerifiedYear: null, isConceptual: true, color: '#d9c6ae' },
-  { ...common, id: 'h-education', name: '교육동 · 개념 모형', campus: 'humanities', position: [-7.7, 0, 3.7], dimensions: [3.7, 3.1, 5.2], appearance: 'classic', firstVerifiedYear: null, isConceptual: true, color: '#dfcfbb' },
-  { ...common, id: 'science', name: '차세대과학관', campus: 'nature', position: [-6, 0, -4], dimensions: [5.5, 5.5, 3.8], appearance: 'science', firstVerifiedYear: 2008, color: '#dedbc9' },
-  { ...common, id: 'chapel', name: '60주년채플관', campus: 'nature', position: [6, 0, 3], dimensions: [5, 3.5, 5], appearance: 'chapel', firstVerifiedYear: 2008, color: '#e7d8c5' },
-  { ...common, id: 'n-main', name: '기본 건물 군 · 개념 모형', campus: 'nature', position: [4.5, 0, -5.4], dimensions: [7, 3.6, 3], appearance: 'classic', firstVerifiedYear: null, isConceptual: true, color: '#d9c6ae' },
-  { ...common, id: 'n-education', name: '교육동 · 개념 모형', campus: 'nature', position: [-7, 0, 3.7], dimensions: [4.2, 3, 4.5], appearance: 'classic', firstVerifiedYear: null, isConceptual: true, color: '#d9c6ae' },
+// Historical visibility is independent from the confidence of the present-day model.
+const historicalBuildings: { id: string; name: string; campus: Campus; firstVerifiedYear: number | null; isConceptual: boolean }[] = [
+  { id: 'dorm', name: '생활관', campus: 'humanities', firstVerifiedYear: 2006, isConceptual: false },
+  { id: 'library', name: '방목학술정보관', campus: 'humanities', firstVerifiedYear: 2010, isConceptual: false },
+  { id: 'mcc', name: 'MCC관', campus: 'humanities', firstVerifiedYear: 2021, isConceptual: false },
+  { id: 'h-main', name: '종합관', campus: 'humanities', firstVerifiedYear: null, isConceptual: false },
+  { id: 'h-education', name: '미래관', campus: 'humanities', firstVerifiedYear: null, isConceptual: false },
+  { id: 'h-student', name: '학생회관', campus: 'humanities', firstVerifiedYear: null, isConceptual: false },
+  { id: 'h-international', name: '국제관', campus: 'humanities', firstVerifiedYear: null, isConceptual: false },
+  { id: 'h-admin', name: '행정동', campus: 'humanities', firstVerifiedYear: null, isConceptual: false },
+  { id: 'science', name: '차세대과학관', campus: 'nature', firstVerifiedYear: 2008, isConceptual: false },
+  { id: 'chapel', name: '60주년채플관', campus: 'nature', firstVerifiedYear: 2008, isConceptual: false },
+  { id: 'n-main', name: '제1공학관', campus: 'nature', firstVerifiedYear: null, isConceptual: false },
+  { id: 'n-hambak', name: '함박관', campus: 'nature', firstVerifiedYear: null, isConceptual: false },
+  { id: 'n-education', name: '교육동 · 개념 모형', campus: 'nature', firstVerifiedYear: null, isConceptual: true },
 ]
+export const buildings: Building[] = historicalBuildings.map(building => ({ ...building, ...architecture[building.id] }))
+
+export function eventPosition(event: HistoryEvent): Vec3 {
+  const building = buildings.find(item => item.id === event.buildingId)
+  return building ? [building.position[0], building.baseHeight + building.dimensions[1] + 1.5, building.position[2]] : event.position
+}

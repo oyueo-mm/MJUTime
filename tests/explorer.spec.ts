@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { CURRENT_YEAR } from '../src/data/history'
+import { buildings, CURRENT_YEAR } from '../src/data/history'
 
 async function ready(page: Page) {
   await page.goto('./')
@@ -81,7 +81,7 @@ test('real WebGL, scenarios A–F, sources, and camera interactions', async ({ p
   for (const year of [2008, 1948, CURRENT_YEAR, 2007, 2008, 1983, CURRENT_YEAR, 2007]) await setYear(page, year)
   await expect.poll(async () => (await model(page, 'science'))?.visible).toBe(false)
   await expect.poll(async () => (await model(page, 'chapel'))?.visible).toBe(false)
-  expect((await page.evaluate(() => window.__MJUTIME_DEBUG__?.().buildings))?.length).toBe(4)
+  expect((await page.evaluate(() => window.__MJUTIME_DEBUG__?.().buildings))?.length).toBe(buildings.filter(building=>building.campus==='nature').length)
   await setYear(page, 1978)
   await expect(page.getByText('아직 이곳에 닿기 전의 이야기')).toBeVisible()
   await expect.poll(() => page.evaluate(() => window.__MJUTIME_DEBUG__?.().buildings.every(building => !building.visible))).toBe(true)

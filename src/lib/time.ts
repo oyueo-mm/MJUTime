@@ -3,10 +3,10 @@ import { CURRENT_YEAR, MIN_YEAR, campusInfo, events, type Building, type Campus 
 export function clampYear(year: number) {
   return Number.isFinite(year) ? Math.min(CURRENT_YEAR, Math.max(MIN_YEAR, Math.round(year))) : CURRENT_YEAR
 }
-/** Unknown build dates never become invented dates. Concept models appear only in the present. */
+/** Unknown build dates never become invented dates. Undated models appear only in the present. */
 export function buildingExists(building: Building, year: number): boolean {
   if (year < campusInfo[building.campus].contextYear) return false
-  if (building.firstVerifiedYear === null) return year === CURRENT_YEAR && building.isConceptual
+  if (building.firstVerifiedYear === null) return year === CURRENT_YEAR
   return year >= building.firstVerifiedYear
 }
 export function campusEvents(campus: Campus) {

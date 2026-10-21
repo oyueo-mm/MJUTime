@@ -1,6 +1,7 @@
 import { Component, Suspense, lazy, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowDownLeft, ArrowLeft, ArrowRight, BookOpen, Check, ChevronRight, CircleHelp, Compass, ExternalLink, Flag, History, Layers3, MapPin, Maximize, Minus, MousePointer2, Pause, Play, Plus, RotateCcw, X } from 'lucide-react'
-import { buildings, campusInfo, CURRENT_YEAR, events, MIN_YEAR, type Campus, type HistoryEvent } from './data/history'
+import { buildings, campusInfo, CURRENT_YEAR, events, MIN_YEAR, type Building, type Campus, type HistoryEvent } from './data/history'
+import { confidenceLabels } from './data/architecture'
 import { buildingExists, campusEvents, clampYear, eventYear } from './lib/time'
 
 const CampusScene = lazy(() => import('./components/CampusScene'))
@@ -31,11 +32,22 @@ function useReducedMotion() {
   return reduced
 }
 
+function RestorationInfo({ building }: { building: Building }) {
+  return <details className="restoration-info" data-confidence={building.modelConfidence}>
+    <summary><b>{building.modelConfidence}</b>{confidenceLabels[building.modelConfidence]} · 모델 근거</summary>
+    <p><strong>확인한 요소</strong>{building.observed}</p>
+    <p><strong>추정·자료 한계</strong>{building.estimated}</p>
+    <p>외형 신뢰도와 개관 연도의 검증 여부는 별개입니다.</p>
+    {building.sourceReferences.map(source=><a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.title}<ExternalLink size={11}/></a>)}
+  </details>
+}
+
 export default function App() {
   const [year, setYear] = useState(CURRENT_YEAR)
   const [campus, setCampus] = useState<Campus>('humanities')
   const [playing, setPlaying] = useState(false)
   const [selected, setSelected] = useState<HistoryEvent | null>(null)
+  const [inspected, setInspected] = useState<Building | null>(null)
   const [listOpen, setListOpen] = useState(false)
   const [help, setHelp] = useState(false)
   const [labels, setLabels] = useState(true)
@@ -48,7 +60,8 @@ export default function App() {
   const currentEvents = campusEvents(campus).filter(event => event.year === year)
   const latest = campusEvents(campus).filter(event => event.year <= year).at(-1)
   const displayedCount = buildings.filter(building => building.campus === campus && buildingExists(building, year)).length
-  const hasPanel = selected || listOpen || !webgl
+  const hasPanel = selected || inspected || listOpen || !webgl
+  const selectedBuilding = buildings.find(building=>building.id===selected?.buildingId)
 
   useEffect(() => {
     if (!playing) return
@@ -59,31 +72,32 @@ export default function App() {
     return () => window.clearInterval(timer)
   }, [playing])
   useEffect(() => {
-    if (selected || listOpen) closeButton.current?.focus()
-  }, [selected, listOpen])
+    if (selected || inspected || listOpen) closeButton.current?.focus()
+  }, [selected, inspected, listOpen])
   useEffect(() => {
-    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setSelected(null); setListOpen(false); setHelp(false); opener.current?.focus() } }
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setSelected(null); setInspected(null); setListOpen(false); setHelp(false); opener.current?.focus() } }
     window.addEventListener('keydown', close)
     return () => window.removeEventListener('keydown', close)
   }, [])
 
   function changeYear(value: number) {
-    setYear(clampYear(value)); setPlaying(false); setSelected(null)
+    setYear(clampYear(value)); setPlaying(false); setSelected(null); setInspected(null)
   }
   function selectEvent(event: HistoryEvent) {
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     if (event.campus !== 'all') setCampus(event.campus)
-    setYear(event.year); setPlaying(false); setListOpen(false); setSelected(event)
+    setYear(event.year); setPlaying(false); setListOpen(false); setInspected(null); setSelected(event)
   }
-  function changeCampus(value: Campus) { setCampus(value); setSelected(null) }
+  function changeCampus(value: Campus) { setCampus(value); setSelected(null); setInspected(null) }
   function navigate(direction: -1 | 1) {
     const next = eventYear(year, direction)
     changeYear(next)
     const matching = events.filter(event => event.year === next)
     if (!matching.some(event => event.campus === campus || event.campus === 'all') && matching[0]?.campus !== 'all' && matching[0]) setCampus(matching[0].campus)
   }
-  function closePanel() { setSelected(null); setListOpen(false); opener.current?.focus() }
-  function openHistory() { opener.current = document.activeElement as HTMLElement; setSelected(null); setListOpen(value => !value); setHelp(false) }
+  function closePanel() { setSelected(null); setInspected(null); setListOpen(false); opener.current?.focus() }
+  function inspectBuilding(building: Building) { opener.current=document.activeElement as HTMLElement; setSelected(null); setPlaying(false); setListOpen(false); setInspected(building) }
+  function openHistory() { opener.current = document.activeElement as HTMLElement; setSelected(null); setInspected(null); setListOpen(value => !value); setHelp(false) }
 
   return <div className="app-shell">
     <header className="app-header">
@@ -100,7 +114,7 @@ export default function App() {
 
     <main className="explorer" aria-label="3D 캠퍼스 시간 여행">
       <section className="scene" aria-label={`${info.name} ${year}년 3D 장면`}>
-        {webgl && <SceneBoundary onFailure={() => setWebgl(false)}><Suspense fallback={<div className="scene-loading"><span className="loading-orbit" />캠퍼스를 불러오고 있어요</div>}><CampusScene campus={campus} year={year} selected={selected} onSelect={selectEvent} labels={labels} cameraCommand={cameraCommand} reducedMotion={reducedMotion} onFailure={() => setWebgl(false)} /><SceneAnnotations campus={campus} year={year} selected={selected} onSelect={selectEvent} labels={labels} /></Suspense></SceneBoundary>}
+        {webgl && <SceneBoundary onFailure={() => setWebgl(false)}><Suspense fallback={<div className="scene-loading"><span className="loading-orbit" />캠퍼스를 불러오고 있어요</div>}><CampusScene campus={campus} year={year} selected={selected} onSelect={selectEvent} labels={labels} cameraCommand={cameraCommand} reducedMotion={reducedMotion} onFailure={() => setWebgl(false)} inspectedId={inspected?.id ?? null} onInspect={inspectBuilding} /><SceneAnnotations campus={campus} year={year} selected={selected} onSelect={selectEvent} labels={labels} onInspect={inspectBuilding} /></Suspense></SceneBoundary>}
         {!webgl && <div className="webgl-fallback"><Layers3 size={36} /><h2>텍스트로 떠나는 시간 여행</h2><p>이 환경에서는 WebGL 2를 사용할 수 없습니다.<br />연도 슬라이더와 역사 목록은 계속 이용할 수 있어요.</p></div>}
       </section>
 
@@ -125,14 +139,23 @@ export default function App() {
         <span className="moment-icon">!</span><span><small>{currentEvents.length ? '이 해의 이야기' : '캠퍼스의 최근 변화'} · {(currentEvents[0] ?? latest).year}</small><strong>{(currentEvents[0] ?? latest).title}</strong></span><ChevronRight size={18} />
       </button>}
 
-      {hasPanel && <aside className={`story-panel ${selected ? 'detail' : 'list'}`} role={selected ? 'dialog' : 'region'} aria-modal={selected ? false : undefined} aria-label={selected ? `${selected.year}년 사건 상세` : '전체 역사 목록'}>
-        <div className="panel-topline"><span><BookOpen size={15} />{selected ? '한 장면의 역사' : '명지의 발자취'}</span>{webgl && <button ref={closeButton} className="icon-button" onClick={closePanel} aria-label="사건 패널 닫기"><X size={19} /></button>}</div>
-        {selected ? <><div className="story-content" key={selected.id}>
+      {hasPanel && <aside className={`story-panel ${selected || inspected ? 'detail' : 'list'}`} role={selected || inspected ? 'dialog' : 'region'} aria-modal={selected || inspected ? false : undefined} aria-label={inspected ? `${inspected.name} 건물 정보` : selected ? `${selected.year}년 사건 상세` : '전체 역사 목록'}>
+        <div className="panel-topline"><span><BookOpen size={15} />{inspected ? '건축의 모습과 근거' : selected ? '한 장면의 역사' : '명지의 발자취'}</span>{webgl && <button ref={closeButton} className="icon-button" onClick={closePanel} aria-label="사건 패널 닫기"><X size={19} /></button>}</div>
+        {inspected ? <><div className="story-content">
+          <span className="eyebrow">ARCHITECTURE · v0.2</span><h2>{inspected.name}</h2>
+          <p className="story-description">{inspected.observed}</p>
+          <div className="model-confidence"><b>{inspected.modelConfidence}</b>{confidenceLabels[inspected.modelConfidence]}</div>
+          <p className="story-model-note">{inspected.estimated}</p>
+          <p className="story-model-note">{inspected.firstVerifiedYear ? `${inspected.firstVerifiedYear}년 개관 연혁 확인` : '신축 연도 미확인: 현재 연도에만 표시합니다.'}</p>
+          <RestorationInfo building={inspected}/>
+          <button className="back-to-explore" onClick={closePanel}><ArrowLeft size={15}/>캠퍼스 탐색으로</button>
+        </div><div className="story-source-dock"><div className="source-box"><span><Check size={13}/>건축 자료</span><a href={inspected.sourceReferences[0].url} target="_blank" rel="noopener noreferrer">원본 자료 열기<ExternalLink size={14}/></a></div></div></> : selected ? <><div className="story-content" key={selected.id}>
           <div className="story-year">{selected.year}<span>{selected.month ? `${String(selected.month).padStart(2, '0')}월` : 'YEAR'}</span></div>
           <span className="category-tag">{selected.category === 'building' ? '공간의 탄생' : selected.category === 'campus' ? '캠퍼스의 이동' : '역사의 전환점'}</span>
           <h2>{selected.title}</h2><p className="story-description">{selected.description}</p>
           <div className="story-location"><MapPin size={15} />{selected.campus === 'all' ? '명지대학교 · 학교 전체 사건' : campusInfo[selected.campus].name}</div>
           <p className="story-model-note">{selected.buildingId ? '개관 시점은 공식 기록에 근거합니다. 건물의 외형과 위치는 시연용으로 단순화했습니다.' : '이 마커는 역사적 사건의 안내 위치이며, 실제 건물 위치나 신축을 뜻하지 않습니다.'}</p>
+          {selectedBuilding && <RestorationInfo building={selectedBuilding}/>}
           <button className="back-to-explore" onClick={closePanel}><ArrowLeft size={15} />캠퍼스 탐색으로</button>
         </div><div className="story-source-dock"><div className="source-box"><span><Check size={13} />공식 자료 확인</span><a href={selected.sourceUrl} target="_blank" rel="noopener noreferrer">명지대학교 공식 연혁<ExternalLink size={14} /></a></div></div></> : <div className="history-list"><h2>시간을 따라 걷다.</h2><p>장면을 선택해 그해의 캠퍼스로 이동하세요.</p>{events.map(event => <button key={event.id} className={`history-row ${event.year === year ? 'at-year' : ''} ${event.year > year ? 'future-event' : ''}`} onClick={() => selectEvent(event)}><span className="history-year">{event.year}<i /></span><span><small>{event.campus === 'all' ? '학교 전체' : campusInfo[event.campus].name}{event.year > year && ' · 다가올 장면'}</small><strong>{event.title}</strong></span><ChevronRight size={15} /></button>)}</div>}
       </aside>}
@@ -143,7 +166,7 @@ export default function App() {
         <span /><button className="icon-button" aria-label="기본 시점으로" onClick={() => setCameraCommand(command => ({ kind: 'reset', id: command.id + 1 }))}><RotateCcw size={17} /></button>
         <button className={`icon-button ${labels ? 'enabled' : ''}`} aria-label="건물 이름 표시" aria-pressed={labels} onClick={() => setLabels(value => !value)}><Layers3 size={18} /></button>
       </div>
-      <div className="scene-bottomline"><div className="legend"><span><i className="legend-verified" />연혁 확인 건물</span><span><i className="legend-concept" />현재 개념 모형</span></div><span className="orbit-hint"><MousePointer2 size={13} />드래그하여 회전<span>·</span>스크롤하여 확대</span><div className="north"><Compass size={18} /><span>자유 탐색</span></div></div>
+      <div className="scene-bottomline"><div className="legend"><span><i className="legend-verified" />A·B 근거 모델 / C 개념</span><span><i className="legend-concept" />연도 미상 건물은 현재만</span></div><span className="orbit-hint"><MousePointer2 size={13} />드래그하여 회전<span>·</span>스크롤하여 확대</span><div className="north"><Compass size={18} /><span>자유 탐색</span></div></div>
     </main>
 
     <footer className="time-machine">
@@ -157,7 +180,7 @@ export default function App() {
           </div>
           <div className="year-ticks" aria-hidden="true">{[1948, 1960, 1970, 1980, 1990, 2000, 2010, 2020, CURRENT_YEAR].map(tick => <span key={tick} style={{ left: `${(tick - MIN_YEAR) / (CURRENT_YEAR - MIN_YEAR) * 100}%` }}>{tick}</span>)}</div>
         </div>
-        <div className="playback-controls"><div><button className="icon-button" aria-label="이전 사건" onClick={() => navigate(-1)} disabled={year <= MIN_YEAR}><ArrowLeft size={18} /></button><button className="play-button" aria-label={playing ? '시간 여행 일시정지' : '자동 시간 여행 재생'} aria-pressed={playing} onClick={() => { setSelected(null); if (!playing && year >= CURRENT_YEAR) setYear(MIN_YEAR); setPlaying(value => !value) }}>{playing ? <Pause size={21} fill="currentColor" /> : <Play size={21} fill="currentColor" />}</button><button className="icon-button" aria-label="다음 사건" onClick={() => navigate(1)} disabled={year >= CURRENT_YEAR}><ArrowRight size={18} /></button></div><span>{playing ? '시간을 여행하는 중' : '자동 시간 여행'}</span></div>
+        <div className="playback-controls"><div><button className="icon-button" aria-label="이전 사건" onClick={() => navigate(-1)} disabled={year <= MIN_YEAR}><ArrowLeft size={18} /></button><button className="play-button" aria-label={playing ? '시간 여행 일시정지' : '자동 시간 여행 재생'} aria-pressed={playing} onClick={() => { setSelected(null); setInspected(null); if (!playing && year >= CURRENT_YEAR) setYear(MIN_YEAR); setPlaying(value => !value) }}>{playing ? <Pause size={21} fill="currentColor" /> : <Play size={21} fill="currentColor" />}</button><button className="icon-button" aria-label="다음 사건" onClick={() => navigate(1)} disabled={year >= CURRENT_YEAR}><ArrowRight size={18} /></button></div><span>{playing ? '시간을 여행하는 중' : '자동 시간 여행'}</span></div>
       </div>
       <div className="timeline-footer"><p><span className="notice-dot">i</span>{PROTOTYPE_NOTE}</p><span>되감기는 철거가 아닌, 등장 전 상태로의 이동입니다.</span></div>
     </footer>
