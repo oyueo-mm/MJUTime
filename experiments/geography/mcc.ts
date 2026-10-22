@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js'
 import {heightAt,inRing,mapData} from './spatial'
 import {physicallyKnown} from './campus-evidence'
+import {historicalGround,fieldReferenceAt} from './campus-ground'
 
 export const mccFootprint=mapData.buildings.find(b=>b.id==='1127358152')!.p
 const t=mapData.terrain,dx=(t.max[0]-t.min[0])/(t.cols-1),dz=(t.max[1]-t.min[1])/(t.rows-1)
@@ -10,8 +11,8 @@ export const mccBounds={minX:t.min[0]+Math.floor((-460-t.min[0])/dx)*dx,maxX:t.m
 // central outside stairs. Register: B2 / 2F. These are NOT surveyed floor elevations.
 export const mccLevels={floorHeight:3.8,lower:heightAt(-360,415)+.3,below:2,above:2,confidence:'partial-photo / estimated-levels'}
 export const inMccPatch=(x:number,z:number)=>x>=mccBounds.minX&&x<=mccBounds.maxX&&z>=mccBounds.minZ&&z<=mccBounds.maxZ
-export function mccGround(x:number,z:number,active:boolean){
-  return active&&inRing([x,z],mccFootprint)?mccLevels.lower-.15:heightAt(x,z)
+export function mccGround(x:number,z:number,active:boolean,field=false){
+  return active&&inRing([x,z],mccFootprint)?mccLevels.lower-.15:historicalGround(x,z,field)
 }
 function clip(ring:number[][],axis:number,bound:number,keepGreater:boolean):number[][]{
   const out:number[][]=[]
@@ -33,6 +34,7 @@ export class MccScene {
   readonly patch:THREE.Mesh
   private batches=new Map<string,THREE.BufferGeometry[]>()
   private active=false
+  private field=false
   private target=1
   private lastTime=0
   constructor(){
@@ -85,10 +87,11 @@ export class MccScene {
   private add(g:THREE.BufferGeometry,color:string){if(!this.batches.has(color))this.batches.set(color,[]);if(g.index){const flat=g.toNonIndexed();g.dispose();g=flat}this.batches.get(color)!.push(g)}
   update(month:number){
     const active=physicallyKnown('1127358152',month);this.target=active?1:0
-    if(active===this.active)return
-    this.active=active
+    const field=fieldReferenceAt(month)
+    if(active===this.active&&field===this.field)return
+    this.active=active;this.field=field
     const p=this.patch.geometry.getAttribute('position')
-    for(let i=0;i<p.count;i++)p.setY(i,mccGround(p.getX(i),p.getZ(i),active))
+    for(let i=0;i<p.count;i++)p.setY(i,mccGround(p.getX(i),p.getZ(i),active,field))
     p.needsUpdate=true;this.patch.geometry.computeVertexNormals()
   }
   tick(time:number){

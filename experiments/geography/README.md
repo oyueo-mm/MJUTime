@@ -1,5 +1,7 @@
 # 지리 데이터 실험
 
+**현재 통합본:** `geography.html`에 복원 GeoJSON·사진 기반 옛 체육관·상세 입면·운동장/주차 공간을 통합했다. 기본 2006.12이며 2002/2006/2010/2026은 같은 카메라로 비교한다. [네 시대 실제 화면과 추정 범위](INTEGRATION.md). `restoration.html`은 자료 검토용으로 유지한다. `?date=2026-10&view=region`으로 기존 전체 지역 구도를 바로 열 수 있다.
+
 `experiment/geographic-history` 전용. 기존 React 화면·main·Pages 워크플로는 변경하지 않는다.
 
 ```sh

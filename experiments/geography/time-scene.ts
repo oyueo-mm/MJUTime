@@ -16,6 +16,7 @@ export class TimeScene{
   private phaseEdges=new THREE.LineSegments(new THREE.EdgesGeometry(this.phaseMesh.geometry),new THREE.LineBasicMaterial({color:'#ad7836'}))
   private lastTime=0
   private suppressBuildings=false
+  private suppressHousing=false
   private value=0
   constructor(){
     const area=mapData.areas.find(a=>a.id==='1126398129')!
@@ -40,9 +41,10 @@ export class TimeScene{
     const pivot=new THREE.Group();pivot.position.set(center[0],base,center[1]);pivot.add(mesh,edges);pivot.visible=false;pivot.scale.y=.001
     this.group.add(pivot);this.housing.set(id,{pivot,mesh,edges,target:0})
   }
-  update(value:number,suppressBuildings=false){
+  update(value:number,suppressBuildings=false,suppressHousing=suppressBuildings){
     this.value=value
     this.suppressBuildings=suppressBuildings
+    this.suppressHousing=suppressHousing
     for(const [id,b] of this.buildings)b.target=buildingKnown(id,value)?1:0
     this.housingStage=projectStage('hongeun2',value)
     const completed=this.housingStage==='completion'||this.housingStage==='approval'
@@ -66,7 +68,7 @@ export class TimeScene{
     const dt=Math.min(.05,this.lastTime?(time-this.lastTime)/1000:.016);this.lastTime=time
     for(const b of this.buildings.values()){
       b.pivot.scale.y=THREE.MathUtils.lerp(b.pivot.scale.y,Math.max(.001,b.target),1-Math.exp(-12*dt))
-      b.pivot.visible=!this.suppressBuildings&&(b.target===1||b.pivot.scale.y>.005)
+      b.pivot.visible=!this.suppressHousing&&(b.target===1||b.pivot.scale.y>.005)
     }
     for(const b of this.housing.values()){
       b.pivot.scale.y=THREE.MathUtils.lerp(b.pivot.scale.y,Math.max(.001,b.target),1-Math.exp(-12*dt))

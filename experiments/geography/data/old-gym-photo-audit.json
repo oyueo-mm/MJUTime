@@ -1,0 +1,43 @@
+{
+  "source": "user-provided private local photographs",
+  "files": [
+    {
+      "filename": "old-gym-front-and-admin.png",
+      "sha256": "b74cf85d3947a1a063d40251c7854f3990f5f65c282d4efafcc84bfde9203949",
+      "pixels": [
+        550,
+        413
+      ],
+      "captureDate": null,
+      "photographer": null,
+      "originalUrl": null
+    },
+    {
+      "filename": "old-gym-long-facade.png",
+      "sha256": "7ad5706c4f75e6c5cb9f64d237b5a4b155cd333b16558404342c85f6851faca9",
+      "pixels": [
+        404,
+        231
+      ],
+      "captureDate": null,
+      "photographer": null,
+      "originalUrl": null
+    },
+    {
+      "filename": "old-gym-demolition.png",
+      "sha256": "ce1d6bd2c1a973b70689095ef2ccf1deec5f7d4434e7e04ae4a3c450f4d7c2ab",
+      "pixels": [
+        406,
+        226
+      ],
+      "captureDate": null,
+      "photographer": null,
+      "originalUrl": null
+    }
+  ],
+  "redistributeImages": false,
+  "textureUse": false,
+  "modelInterpretation": "independent procedural geometry authorized by user; dimensions/orientation/date applicability estimated",
+  "modelVersion": "integrated-geography-2006",
+  "googleEarthUsed": false
+}

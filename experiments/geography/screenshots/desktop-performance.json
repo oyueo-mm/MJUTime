@@ -1,10 +1,10 @@
 {
   "environment": "headless Chromium / emulation, not physical device GPU benchmark",
-  "elapsedMs": 2035,
-  "frames": 33,
-  "fps": 16.216216216216214,
-  "calls": 18,
-  "triangles": 139304,
-  "geometries": 65,
+  "elapsedMs": 2084,
+  "frames": 20,
+  "fps": 9.596928982725528,
+  "calls": 51,
+  "triangles": 139620,
+  "geometries": 96,
   "photoLayers": 5
 }

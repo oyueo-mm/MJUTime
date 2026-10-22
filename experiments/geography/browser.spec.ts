@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test'
 import {writeFile} from 'node:fs/promises'
 test('geographic rendering, navigation, dated evidence and mobile regression',async({page},info)=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message))
-  await page.goto('http://127.0.0.1:4188/MJUTime/geography.html')
+  await page.goto('http://127.0.0.1:4188/MJUTime/geography.html?date=2026-10&view=region')
   await expect.poll(()=>page.evaluate(()=>window.__GEO_STUDY__?.().frame??0)).toBeGreaterThan(5)
   const initial=await page.evaluate(()=>window.__GEO_STUDY__!())
   await page.locator('#explore').click()
@@ -22,9 +22,10 @@ test('geographic rendering, navigation, dated evidence and mobile regression',as
   await page.getByRole('button',{name:'사선 보기',exact:true}).click()
   for(const year of [1985,2001]){
     await page.getByRole('button',{name:String(year),exact:true}).click()
+    await page.locator('#context').uncheck()
     expect(await page.evaluate(()=>window.__GEO_STUDY__!().currentVisible)).toBe(false)
     await expect(page.locator('#map-state')).toContainText('항공사진 국소 전사')
-    expect(await page.evaluate(()=>window.__GEO_STUDY__!().historicalFeatures)).toBe(year===1985?4:8)
+    expect(await page.evaluate(()=>window.__GEO_STUDY__!().historicalFeatures)).toBe(year===1985?4:5)
     await page.screenshot({path:`experiments/geography/screenshots/${info.project.name}-${year}.png`,fullPage:false})
     const context=page.getByRole('checkbox',{name:/현재 건물/});await context.check()
     expect(await page.evaluate(()=>window.__GEO_STUDY__!().currentVisible)).toBe(true)
@@ -41,7 +42,7 @@ test('geographic rendering, navigation, dated evidence and mobile regression',as
 test('free travel, occupancy, relocation, rapid dates and performance sample',async({page},info)=>{
   test.setTimeout(90000)
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message))
-  await page.goto('http://127.0.0.1:4188/MJUTime/geography.html')
+  await page.goto('http://127.0.0.1:4188/MJUTime/geography.html?date=2026-10&view=region')
   await expect.poll(()=>page.evaluate(()=>window.__GEO_STUDY__?.().frame??0)).toBeGreaterThan(5)
   await page.locator('#explore').click()
   const state=()=>page.evaluate(()=>window.__GEO_STUDY__!())
@@ -100,7 +101,7 @@ test('free travel, occupancy, relocation, rapid dates and performance sample',as
   await page.getByRole('button',{name:'2001',exact:true}).click()
   await page.locator('#school-jump').selectOption('university');await page.waitForTimeout(1500)
   expect((await state()).year).toBe(2001)
-  expect((await state()).historicalFeatures).toBe(8)
+  expect((await state()).historicalFeatures).toBe(5)
   await page.screenshot({path:`experiments/geography/screenshots/${info.project.name}-2001-field.png`,fullPage:false})
   await page.getByRole('button',{name:'2026',exact:true}).click()
   await page.locator('#history-focus').selectOption('mcc');await page.waitForTimeout(1500)
@@ -120,7 +121,7 @@ test('free travel, occupancy, relocation, rapid dates and performance sample',as
 test('month boundaries, playback, source precision, redevelopment and cached geometry',async({page},info)=>{
   test.setTimeout(120000)
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message))
-  await page.goto('http://127.0.0.1:4188/MJUTime/geography.html')
+  await page.goto('http://127.0.0.1:4188/MJUTime/geography.html?date=2026-10&view=region')
   const state=()=>page.evaluate(()=>window.__GEO_STUDY__!())
   await expect.poll(async()=>(await state())?.frame??0).toBeGreaterThan(5)
   const choose=async(value:string)=>{await page.locator('#date-input').fill(value);await expect(page.locator('#current-month')).toHaveText(value.replace('-','.'))}
@@ -135,7 +136,7 @@ test('month boundaries, playback, source precision, redevelopment and cached geo
   await choose('2001-08')
   await expect(page.locator('#month-events')).toContainText('전문대 이전')
   await choose('2006-01');expect((await state()).knownBuildings).not.toContain('462990142')
-  await expect(page.locator('#month-events')).toContainText('월 미확인')
+  await expect(page.locator('#month-events')).not.toContainText('3D 전사하지 않음')
   await choose('2006-02');expect((await state()).knownBuildings).toContain('462990142')
   await page.locator('#school-jump').selectOption('university');await page.waitForTimeout(1200)
   await page.screenshot({path:`experiments/geography/screenshots/${info.project.name}-month-2006-02.png`,fullPage:false})
@@ -155,7 +156,7 @@ test('month boundaries, playback, source precision, redevelopment and cached geo
   await choose('2016-05');expect((await state()).projectStage).toBe('construction-report')
   await page.getByRole('button',{name:'이전 사건'}).click();expect((await state()).timeIndex).toBeLessThan(2016*12+4)
   await page.getByRole('button',{name:'다음 사건'}).click();await expect(page.locator('#current-month')).toHaveText('2016.05')
-  await choose('2001-08');expect((await state()).historicalFeatures).toBe(2)
+  await choose('2001-08');expect((await state()).historicalFeatures).toBe(1)
   await page.locator('#photo-reference').check();expect((await state()).historicalFeatures).toBe(4)
   await expect(page.locator('#time-resolution')).toContainText('선택 월의 존재 증거 아님')
   await page.locator('#photo-reference').uncheck()
@@ -186,11 +187,62 @@ test('month boundaries, playback, source precision, redevelopment and cached geo
   expect(errors).toEqual([]);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
 })
 
+test('integrated 2006 campus and four epochs share one camera, gym and library never overlap',async({page},info)=>{
+  test.setTimeout(90000)
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())})
+  await page.goto('http://127.0.0.1:4188/MJUTime/geography.html')
+  const state=()=>page.evaluate(()=>window.__GEO_STUDY__!())
+  await expect.poll(async()=>(await state())?.frame??0).toBeGreaterThan(6)
+  expect((await state()).year).toBe(2006);expect((await state()).gymVisible).toBe(true)
+  expect((await state()).footprints).toBe(2667)
+  const camera=(await state()).camera,target=(await state()).target,measurements=[]
+  for(const year of [2002,2006,2010,2026]){
+    await page.locator(`[data-campus-year="${year}"]`).click()
+    await expect.poll(async()=>(await state()).year).toBe(year);await page.waitForTimeout(850)
+    const s=await state()
+    expect(s.camera).toEqual(camera);expect(s.target).toEqual(target)
+    expect(s.pipelineIds).toHaveLength(year===2002?5:year===2006?6:7)
+    expect(s.gymVisible).toBe(year===2002||year===2006)
+    expect(s.pipelineIds.includes('462990139')&&s.gymVisible).toBe(false)
+    expect(s.grounded).toBe(true);expect(s.mcc.active).toBe(year===2026)
+    expect(s.fieldVisible).toBe(year!==2026);expect(s.parkingVisible).toBe(year!==2026)
+    expect(s.gymPhotoDates).toBeNull()
+    await page.screenshot({path:`experiments/geography/screenshots/integrated-${info.project.name}-${year}.png`})
+    const frame=s.frame,start=performance.now();await page.waitForTimeout(1000);const end=await state()
+    measurements.push({year,camera:s.camera,models:s.pipelineIds,gym:s.gymVisible,field:s.fieldVisible,calls:end.calls,triangles:end.triangles,fps:(end.frame-frame)/((performance.now()-start)/1000)})
+  }
+  // Independent earth camera remains usable; time controls do not reset it.
+  await page.locator('#explore').click()
+  const box=(await page.locator('canvas').boundingBox())!
+  if(info.project.name==='desktop'){
+    await page.mouse.move(box.x+box.width*.45,box.y+box.height*.5);await page.mouse.down();await page.mouse.move(box.x+box.width*.6,box.y+box.height*.56,{steps:8});await page.mouse.up()
+  }else{
+    const session=await page.context().newCDPSession(page),x=box.x+box.width*.4,y=box.y+box.height*.55
+    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:0}]})
+    for(let n=1;n<=7;n++)await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+n*10,y,id:0}]})
+    await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await session.detach()
+  }
+  await expect.poll(async()=>(await state()).camera).not.toEqual(camera)
+  await page.locator('[data-campus-year="2006"]').click();await page.waitForTimeout(500)
+  expect((await state()).gymVisible).toBe(true)
+  expect((await state()).pipelineIds).not.toContain('462990139')
+  for(const year of [2010,2006,2010,2002]){
+    await page.locator(`[data-campus-year="${year}"]`).click();await expect(page.locator('#current-month')).toHaveText(`${year}.12`)
+    expect((await state()).libraryRendered&&(await state()).gymVisible).toBe(false)
+  }
+  await page.locator('[data-campus-year="2006"]').click();await page.waitForTimeout(300)
+  await page.locator('.place').filter({hasText:'옛 실내체육관'}).click();await page.waitForTimeout(1200)
+  await page.screenshot({path:`experiments/geography/screenshots/integrated-${info.project.name}-gym-detail.png`})
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+  await writeFile(`experiments/geography/screenshots/integrated-${info.project.name}-measurements.json`,JSON.stringify({environment:'Headless Chromium; physical smartphone not tested',measurements},null,2)+'\n')
+  expect(errors).toEqual([])
+})
+
 test('sticky scroll story, intermediate campus continuity, additional captures and terrain rewind',async({page},info)=>{
   test.setTimeout(90000)
   const errors:string[]=[]
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())})
-  await page.goto('http://127.0.0.1:4188/MJUTime/geography.html')
+  await page.goto('http://127.0.0.1:4188/MJUTime/geography.html?date=2026-10&view=region')
   const state=()=>page.evaluate(()=>window.__GEO_STUDY__!())
   await expect.poll(async()=>(await state())?.frame??0).toBeGreaterThan(5)
   const choose=async(date:string)=>{await page.locator('#date-input').fill(date);await expect(page.locator('#current-month')).toHaveText(date.replace('-','.'))}
@@ -207,7 +259,7 @@ test('sticky scroll story, intermediate campus continuity, additional captures a
   }
   for(const date of ['1997-10','2006-11','2016-10']){
     await choose(date);await expect(page.locator('#month-events')).toContainText('여백 날짜 판독')
-    expect((await state()).historicalFeatures).toBe(date==='2016-10'?3:4)
+    expect((await state()).historicalFeatures).toBe(date==='1997-10'?3:2)
     await page.waitForTimeout(300)
     await page.screenshot({path:`experiments/geography/screenshots/${info.project.name}-aerial-${date}.png`})
   }

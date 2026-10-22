@@ -56,6 +56,7 @@ export class Navigation {
     try{localStorage.setItem('mjutime-geo-camera',JSON.stringify(this.settings))}catch{/* Storage is optional. */}
   }
   home(){this.keys.clear();this.destination=null;this.camera.position.set(1600,1750,2050);this.controls.target.set(0,65,-40);this.controls.update()}
+  campus(){this.keys.clear();this.destination=null;const scale=this.host.clientWidth<760?1.45:1;this.controls.target.set(-305,43,275);this.camera.position.set(-305+270*scale,43+222*scale,275+340*scale);this.controls.update()}
   top(){this.keys.clear();this.destination=null;this.camera.position.set(0,3000,-1);this.controls.target.set(0,0,0);this.controls.update()}
   travel([x,z]:Point,distance=420){
     this.keys.clear()
