@@ -18,6 +18,7 @@ const journey=document.createElement('div');journey.id='journey'
 const stage=document.querySelector('main')!;stage.before(journey);journey.append(stage)
 journey.insertAdjacentHTML('beforeend','<div id="scroll-track" aria-hidden="true"></div>')
 document.querySelector('.limits p:last-child')!.textContent='과거 황토색은 항공사진 국소 전사입니다. 지붕 높이 3m는 표현용이며 정사보정되지 않았습니다. 현재 DEM을 사용하므로 당시 지반고가 아닙니다. 빈 곳은 미조사 영역입니다.'
+document.querySelector('.limits')!.insertAdjacentHTML('beforeend','<p><a href="./restoration.html">2002·2006·2010·2026 복원 근거 검토 →</a></p>')
 const labelHost=document.querySelector<HTMLElement>('#labels')!
 const leaders=document.createElementNS('http://www.w3.org/2000/svg','svg');leaders.id='leaders';host.append(leaders)
 const renderer=new THREE.WebGLRenderer({antialias:true})

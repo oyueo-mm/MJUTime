@@ -1,0 +1,66 @@
+{
+  "imageryReady": 0,
+  "referenceOnly": [
+    {
+      "provider": "Google Earth",
+      "captureDate": "2002-02-15",
+      "originalId": null,
+      "status": "user-reported-visual-reference-only",
+      "derive": false
+    },
+    {
+      "provider": "Google Earth",
+      "captureDate": "2005-10-12",
+      "originalId": null,
+      "status": "user-reported-visual-reference-only",
+      "derive": false
+    },
+    {
+      "provider": "Google Earth",
+      "captureDate": "2006-01-28",
+      "originalId": null,
+      "status": "user-reported-visual-reference-only",
+      "derive": false
+    },
+    {
+      "provider": "Google Earth",
+      "captureDate": "2010-11-11",
+      "originalId": null,
+      "status": "user-reported-visual-reference-only",
+      "derive": false
+    }
+  ],
+  "blockers": [
+    "2002/2006/2010 캠퍼스의 가공 허용 원본 미확보",
+    "옛 실내체육관 윤곽·정확 철거일·층수 미확인",
+    "과거 개별 교사 증축·지붕 변형 미확인",
+    "MCC 이전 운동장 소멸 시점 및 공사 단계별 윤곽 미확인",
+    "주변 주택가 주소별 동일성·철거시점 미확인"
+  ],
+  "targets": [
+    {
+      "year": 2002,
+      "preferredSource": "ngii-aerial",
+      "status": "original-not-acquired",
+      "next": "Acquire licensed originals once, preserve identifier/date/size/SHA/transform, then batch extract; no screenshot loop"
+    },
+    {
+      "year": 2006,
+      "preferredSource": "ngii-aerial",
+      "status": "original-not-acquired",
+      "next": "Acquire licensed originals once, preserve identifier/date/size/SHA/transform, then batch extract; no screenshot loop"
+    },
+    {
+      "year": 2010,
+      "preferredSource": "ngii-ortho",
+      "status": "original-not-acquired",
+      "next": "Acquire licensed originals once, preserve identifier/date/size/SHA/transform, then batch extract; no screenshot loop"
+    },
+    {
+      "year": 2026,
+      "preferredSource": "ngii-ortho",
+      "status": "original-not-acquired",
+      "next": "Acquire licensed originals once, preserve identifier/date/size/SHA/transform, then batch extract; no screenshot loop"
+    }
+  ]
+}

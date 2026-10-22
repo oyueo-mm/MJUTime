@@ -1,0 +1,28 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {affine,audit,fit,project,unproject,existence,feature,permitted,validateImage,validDate} from './core.mjs';
+const controls=[[0,0,10,20],[10,0,30,20],[0,10,10,50],[10,10,30,50],[5,3,20,29]],source={id:'owned',provider:'own',rights:{derive:true,checkedAt:'2026-10-22',evidenceUrl:'https://example.org/license'}},meta={originalId:'test',captureDate:'2006-11-29',dateEvidence:'synthetic test',pixelSize:[256,256],registrationEvidence:'synthetic exact transform',sha256:'a'.repeat(64),matrix:[[1,0],[0,1],[0,0]]};
+test('affine recovers known transform and independent checkpoint',()=>{const r=audit(controls,[[3,7,16,41]]);assert.ok(r.fitRms<1e-10);assert.ok(r.leaveOneOutMax<1e-10);assert.ok(r.independentRms<1e-10);assert.deepEqual(affine([3,7],[[2,0],[0,3],[10,20]]),[16,41]);});
+test('without independent checkpoints accuracy is null',()=>assert.equal(audit(controls).independentRms,null));
+test('degenerate controls fail, no invented zero-error matrix',()=>assert.throws(()=>fit([[0,0,0,0],[1,1,1,1],[2,2,2,2]]),/Degenerate/));
+test('three point fit has no cross-validation',()=>assert.equal(audit(controls.slice(0,3)).leaveOneOut,null));
+test('nonfinite controls fail',()=>assert.throws(()=>fit([[0,0,0,0],[1,2,3,4],[Infinity,3,1,2]])));
+test('metric projection round trip',()=>{const p=[126.9228,37.5801],o=[126.9265,37.58275];const q=unproject(project(p,o),o);assert.ok(Math.hypot(...q.map((v,i)=>v-p[i]))<1e-10);});
+test('permission default deny and explicit source evidence required',()=>{assert.equal(permitted({},'derive'),false);assert.equal(permitted({...source,rights:{derive:true}},'derive'),false);assert.equal(permitted(source,'derive'),true);assert.equal(permitted({...source,provider:'Google Earth'},'derive'),false);});
+test('verified digest and dates accepted',()=>assert.equal(validateImage(meta,source,'a'.repeat(64)),meta));
+test('unlicensed image refused before processing',()=>assert.throws(()=>validateImage(meta,{id:'unknown'},meta.sha256),/permission/));
+test('mismatched digest refused',()=>assert.throws(()=>validateImage(meta,source,'b'.repeat(64)),/SHA/));
+test('unknown capture date or original ID refused',()=>{assert.throws(()=>validateImage({...meta,captureDate:'2006'},source,meta.sha256));assert.throws(()=>validateImage({...meta,originalId:null},source,meta.sha256));});
+test('impossible calendar dates refused',()=>{assert.equal(validDate('2006-02-30'),false);assert.equal(validDate('2004-02-29'),true);});
+test('singular transform refused',()=>assert.throws(()=>validateImage({...meta,matrix:[[1,1],[1,1],[0,0]]},source,meta.sha256),/Singular/));
+test('completion alone never asserts earlier absence',()=>assert.equal(existence({completed:'2010-01-20'},'2006-01-28').state,'unknown'));
+test('later persistence is an estimate',()=>assert.equal(existence({completed:'2010-01-20'},'2010-11-11').grade,'estimated'));
+test('documented demolition ends existence',()=>assert.equal(existence({completed:'1972-01-01',demolished:'2008-01-01'},'2010-11-11').state,'absent'));
+test('unknown historic shape has null geometry',()=>assert.equal(feature({id:'gym'},null,'2002-12-31',[0,0]).geometry,null));
+test('current outline exported closed with estimated height',()=>{const f=feature({id:'a',completed:'1997-06-27',above:5},{p:[[0,0],[10,0],[10,10],[0,10]]},'2002-12-31',[126,37]);assert.deepEqual(f.geometry.coordinates[0][0],f.geometry.coordinates[0].at(-1));assert.equal(f.properties.heightMetres,15);assert.equal(f.properties.geometryGrade,'estimated');});
+test('generated targets contain unknown gym and no historic shape confirmation',async()=>{const r=JSON.parse(await readFile(new URL('./generated/snapshots.json',import.meta.url),'utf8'));assert.equal(r.snapshots.length,4);assert.deepEqual(r.snapshots.map(s=>s.features.filter(f=>f.geometry).length),[5,6,7,8]);for(const s of r.snapshots){assert.equal(s.features.find(f=>f.id==='old-humanities-gym').geometry,null);assert.ok(s.features.filter(f=>f.geometry).every(f=>f.properties.geometryGrade==='estimated'));}});
+test('old 1985 registration remains pixel based, not reported in metres',async()=>{const r=JSON.parse(await readFile(new URL('./generated/registration-audit.json',import.meta.url),'utf8'));assert.match(r.find(a=>a.year===1985).units,/pixels/);assert.equal(r.find(a=>a.year===2006).independentRms,null);});
+
+test('invalid independent checkpoints refused',()=>assert.throws(()=>audit(controls,[[0,0,Infinity,0]])));
+test('registration provenance and pixel dimensions required',()=>assert.throws(()=>validateImage({...meta,registrationEvidence:null},source,meta.sha256)));

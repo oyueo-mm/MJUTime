@@ -1,0 +1,5 @@
+import {describe,it,expect} from 'vitest'
+import {makeModels,disposeModels,type ModelFeature} from './restoration/models'
+import snapshots from './restoration/generated/snapshots.json'
+import * as THREE from 'three'
+describe('restoration proxy meshes',()=>{it('creates only documented reference masses for all four targets',()=>{for(const [i,count] of [5,6,7,8].entries()){const group=makeModels(snapshots.snapshots[i].features as unknown as ModelFeature[]),meshes=group.children.filter(o=>o instanceof THREE.Mesh);expect(meshes).toHaveLength(count);for(const m of meshes){expect(m.userData.evidence.geometryBasis).toContain('current OSM');expect([...m.geometry.getAttribute('position').array].every(Number.isFinite)).toBe(true);}disposeModels(group);expect(group.parent).toBeNull();}});it('does not fill unverified geometry',()=>{const group=makeModels([{id:'unknown-gym',geometry:null,properties:{name:'gym',state:'unknown',grade:'unverified',heightMetres:null}}]);expect(group.children).toHaveLength(0);});})

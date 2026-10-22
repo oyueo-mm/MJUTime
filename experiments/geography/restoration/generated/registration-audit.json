@@ -1,0 +1,230 @@
+[
+  {
+    "year": 1985,
+    "frame": {
+      "objectId": 2662182,
+      "dateReadFromFrame": "1985-10-21",
+      "zone": "198510A0302",
+      "course": 21,
+      "photo": 6,
+      "previewSize": [
+        1100,
+        1034
+      ]
+    },
+    "units": "2001 preview pixels; correlated corners on two roofs",
+    "matrix": [
+      [
+        0.9223007702784344,
+        -0.06048474304693331
+      ],
+      [
+        0.02107765139314775,
+        0.9534619861271904
+      ],
+      [
+        2.19793077209863,
+        -206.46939970046503
+      ]
+    ],
+    "fitRms": 1.9929991194381704,
+    "residuals": [
+      0.7164735250343393,
+      3.1042195037523053,
+      0.7228771700050783,
+      2.8126843805360893,
+      1.9325437717141387,
+      1.60410109972084,
+      1.5554940533235577,
+      2.1132152128998447
+    ],
+    "leaveOneOut": [
+      0.9908343701122013,
+      4.983124766547627,
+      1.116688494875669,
+      4.877392499295396,
+      3.216337951067259,
+      2.417164442675136,
+      2.6987421723905536,
+      3.5873413252971216
+    ],
+    "leaveOneOutMax": 4.983124766547627,
+    "independentRms": null,
+    "accuracyClaim": "No survey accuracy; correlated roof centres, relief and parallax remain",
+    "derivationStatus": "legacy-existing; source permission for new processing unverified"
+  },
+  {
+    "year": 2001,
+    "frame": {
+      "objectId": 2729075,
+      "dateReadFromFrame": "2001-09-13",
+      "zone": "200109A0301",
+      "course": 25,
+      "photo": 12,
+      "previewSize": [
+        1100,
+        1182
+      ]
+    },
+    "units": "local metres; current OSM roof centres",
+    "matrix": [
+      [
+        1.21113303746344,
+        0.14191788533056773
+      ],
+      [
+        -0.11541017091301532,
+        1.225165891831968
+      ],
+      [
+        -622.4725008977626,
+        -783.6362372737258
+      ]
+    ],
+    "fitRms": 5.774219900686702,
+    "residuals": [
+      1.025730986453051,
+      0.8686794627097527,
+      3.1415277433556907,
+      1.6489572800289525,
+      7.572921812400832,
+      11.32720456480963
+    ],
+    "leaveOneOut": [
+      2.2666534132250593,
+      1.7197360702156004,
+      5.265170194524229,
+      3.4893481531091046,
+      23.611585657149803,
+      17.362755345731994
+    ],
+    "leaveOneOutMax": 23.611585657149803,
+    "independentRms": null,
+    "accuracyClaim": "No survey accuracy; correlated roof centres, relief and parallax remain",
+    "derivationStatus": "legacy-existing; source permission for new processing unverified"
+  },
+  {
+    "year": 1997,
+    "captureDate": "1997-10-13",
+    "originalId": "2762727",
+    "imageSha256": "2ada02628406d54665824d7f0366fdcdfb615864613633c07ac07e30086ca5d3",
+    "units": "local-metres",
+    "matrix": [
+      [
+        1.0429872067354722,
+        0.06937953791417914
+      ],
+      [
+        -0.10988794465537095,
+        1.413196152491339
+      ],
+      [
+        -562.6245580321483,
+        -617.6472495215052
+      ]
+    ],
+    "fitRms": 12.24221225619013,
+    "residuals": [
+      5.928267006813707,
+      15.1098860043222,
+      4.894514858894717,
+      6.922611072313066,
+      19.4842694035442,
+      14.085829446129848,
+      11.650028179098756
+    ],
+    "leaveOneOut": [
+      7.955647504725652,
+      19.697685655803976,
+      12.930155919878924,
+      8.368979008310548,
+      42.83346765763316,
+      28.92994249183058,
+      34.238879717354116
+    ],
+    "leaveOneOutMax": 42.83346765763316,
+    "independentRms": null,
+    "accuracyClaim": "No survey accuracy; correlated roof centres, relief and parallax remain",
+    "derivationStatus": "legacy-existing; source permission for new processing unverified"
+  },
+  {
+    "year": 2006,
+    "captureDate": "2006-11-29",
+    "originalId": "2748690",
+    "imageSha256": "7569598b6ddcdcc56671a0841a64ee2b80b9ae4fc1f441682fc7348e1ca809d3",
+    "units": "local-metres",
+    "matrix": [
+      [
+        1.0775652411794887,
+        0.03859915590162074
+      ],
+      [
+        0.09881814898933144,
+        1.2064047684912935
+      ],
+      [
+        -721.8038237097303,
+        -473.7563647381111
+      ]
+    ],
+    "fitRms": 4.887543282480185,
+    "residuals": [
+      4.788309388286637,
+      8.096165154342367,
+      2.962461169847009,
+      1.3069676268979236,
+      4.52551202911161
+    ],
+    "leaveOneOut": [
+      6.517282091519763,
+      11.012937369802371,
+      11.769202414059105,
+      43.095415156967825,
+      18.24069412751483
+    ],
+    "leaveOneOutMax": 43.095415156967825,
+    "independentRms": null,
+    "accuracyClaim": "No survey accuracy; correlated roof centres, relief and parallax remain",
+    "derivationStatus": "legacy-existing; source permission for new processing unverified"
+  },
+  {
+    "year": 2016,
+    "captureDate": "2016-10-11",
+    "originalId": "2700585",
+    "imageSha256": "5258b16fa34b5af7b8a255ebed126ede464f562562079569a948845d8cbe3e19",
+    "units": "local-metres",
+    "matrix": [
+      [
+        1.2914880841259588,
+        -0.04860666233216757
+      ],
+      [
+        -0.9562702335967391,
+        1.5078715706590682
+      ],
+      [
+        -1116.1062684116237,
+        -453.2381121285414
+      ]
+    ],
+    "fitRms": 8.507083188661342,
+    "residuals": [
+      2.2299776613354134,
+      8.030036121681503,
+      5.709644593487206,
+      11.76580320459344,
+      11.016527355537157
+    ],
+    "leaveOneOut": [
+      3.430196415653844,
+      23.390496434869373,
+      21.728722159739785,
+      29.879062342418074,
+      31.47181156733405
+    ],
+    "leaveOneOutMax": 31.47181156733405,
+    "independentRms": null,
+    "accuracyClaim": "No survey accuracy; correlated roof centres, relief and parallax remain",
+    "derivationStatus": "legacy-existing; source permission for new processing unverified"
+  }
+]

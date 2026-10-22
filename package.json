@@ -10,6 +10,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "restore:build": "node experiments/geography/restoration/run.mjs build",
+    "restore:test": "node --test experiments/geography/restoration/core.test.mjs && python experiments/geography/restoration/test_extract.py && python experiments/geography/restoration/test_cli.py",
     "dev:geo": "vite --config experiments/geography/vite.config.ts",
     "build:geo": "tsc --project experiments/geography/tsconfig.json && vite build --config experiments/geography/vite.config.ts"
   },

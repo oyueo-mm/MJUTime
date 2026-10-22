@@ -1,0 +1,646 @@
+{
+  "date": "2026-10-22",
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "462990137",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              126.92196714480974,
+              37.580277667984184
+            ],
+            [
+              126.92197972725762,
+              37.580111121092344
+            ],
+            [
+              126.92312144270917,
+              37.580165199425075
+            ],
+            [
+              126.9231087469059,
+              37.58033183614804
+            ],
+            [
+              126.92196714480974,
+              37.580277667984184
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "462990137",
+        "name": "종합관 · 구 본관",
+        "completed": "1971-08-07",
+        "above": 10,
+        "below": 1,
+        "use": "교사·행정(시기별 세부 점유 미확인)",
+        "sources": [
+          "mju-register"
+        ],
+        "demolished": null,
+        "completionEvidence": "inherited-branch-pdf-transcription",
+        "state": "present",
+        "grade": "estimated",
+        "reason": "persistence after completion assumed; historical outline unverified",
+        "snapshotDate": "2026-10-22",
+        "geometryGrade": "estimated",
+        "geometryBasis": "current OSM outline proxy; not extracted historical roof",
+        "geometrySource": "osm",
+        "heightMetres": 30,
+        "heightGrade": "estimated",
+        "heightBasis": "documented above-ground storeys times assumed 3 metres"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "462990141",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              126.92324862745268,
+              37.58043235716852
+            ],
+            [
+              126.92325984963593,
+              37.580225206611566
+            ],
+            [
+              126.92359379460419,
+              37.580236704994604
+            ],
+            [
+              126.92358257242093,
+              37.58044385555156
+            ],
+            [
+              126.92324862745268,
+              37.58043235716852
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "462990141",
+        "name": "학생회관",
+        "completed": "1982-02-17",
+        "above": 10,
+        "below": 1,
+        "use": "교사·행정(시기별 세부 점유 미확인)",
+        "sources": [
+          "mju-register"
+        ],
+        "demolished": null,
+        "completionEvidence": "inherited-branch-pdf-transcription",
+        "state": "present",
+        "grade": "estimated",
+        "reason": "persistence after completion assumed; historical outline unverified",
+        "snapshotDate": "2026-10-22",
+        "geometryGrade": "estimated",
+        "geometryBasis": "current OSM outline proxy; not extracted historical roof",
+        "geometrySource": "osm",
+        "heightMetres": 30,
+        "heightGrade": "estimated",
+        "heightBasis": "documented above-ground storeys times assumed 3 metres"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "640328305",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              126.92128043787909,
+              37.58021191160618
+            ],
+            [
+              126.92129007308694,
+              37.580023805246135
+            ],
+            [
+              126.92191103389348,
+              37.580043837585336
+            ],
+            [
+              126.92190139868565,
+              37.58023194394538
+            ],
+            [
+              126.92128043787909,
+              37.58021191160618
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "640328305",
+        "name": "미래관 · 구 별관",
+        "completed": "1982-09-10",
+        "above": 6,
+        "below": 1,
+        "use": "교사·행정(시기별 세부 점유 미확인)",
+        "sources": [
+          "mju-register"
+        ],
+        "demolished": null,
+        "completionEvidence": "inherited-branch-pdf-transcription",
+        "state": "present",
+        "grade": "estimated",
+        "reason": "persistence after completion assumed; historical outline unverified",
+        "snapshotDate": "2026-10-22",
+        "geometryGrade": "estimated",
+        "geometryBasis": "current OSM outline proxy; not extracted historical roof",
+        "geometrySource": "osm",
+        "heightMetres": 18,
+        "heightGrade": "estimated",
+        "heightBasis": "documented above-ground storeys times assumed 3 metres"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "462990138",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              126.92370465617206,
+              37.5810708767517
+            ],
+            [
+              126.92371304447065,
+              37.58044942508084
+            ],
+            [
+              126.92391697081074,
+              37.580451131872074
+            ],
+            [
+              126.92390835580137,
+              37.581072583542934
+            ],
+            [
+              126.92370465617206,
+              37.5810708767517
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "462990138",
+        "name": "국제관 · 구 경상관",
+        "completed": "1982-09-10",
+        "above": 9,
+        "below": 1,
+        "use": "교사·행정(시기별 세부 점유 미확인)",
+        "sources": [
+          "mju-register"
+        ],
+        "demolished": null,
+        "completionEvidence": "inherited-branch-pdf-transcription",
+        "state": "present",
+        "grade": "estimated",
+        "reason": "persistence after completion assumed; historical outline unverified",
+        "snapshotDate": "2026-10-22",
+        "geometryGrade": "estimated",
+        "geometryBasis": "current OSM outline proxy; not extracted historical roof",
+        "geometrySource": "osm",
+        "heightMetres": 27,
+        "heightGrade": "estimated",
+        "heightBasis": "documented above-ground storeys times assumed 3 metres"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "462990140",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              126.92397330843777,
+              37.58019601149838
+            ],
+            [
+              126.92398691108413,
+              37.57998886094143
+            ],
+            [
+              126.92424717505124,
+              37.57999973050664
+            ],
+            [
+              126.9245752255394,
+              37.58021855910887
+            ],
+            [
+              126.92442026872622,
+              37.58036444484369
+            ],
+            [
+              126.92418086215021,
+              37.58020472511678
+            ],
+            [
+              126.92397330843777,
+              37.58019601149838
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "462990140",
+        "name": "행정동",
+        "completed": "1997-06-27",
+        "above": 5,
+        "below": 1,
+        "use": "교사·행정(시기별 세부 점유 미확인)",
+        "sources": [
+          "mju-register"
+        ],
+        "demolished": null,
+        "completionEvidence": "inherited-branch-pdf-transcription",
+        "state": "present",
+        "grade": "estimated",
+        "reason": "persistence after completion assumed; historical outline unverified",
+        "snapshotDate": "2026-10-22",
+        "geometryGrade": "estimated",
+        "geometryBasis": "current OSM outline proxy; not extracted historical roof",
+        "geometrySource": "osm",
+        "heightMetres": 15,
+        "heightGrade": "estimated",
+        "heightBasis": "documented above-ground storeys times assumed 3 metres"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "462990139",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              126.92426395164841,
+              37.58104222062522
+            ],
+            [
+              126.92403384021408,
+              37.58101347466762
+            ],
+            [
+              126.92397330843777,
+              37.58084863456701
+            ],
+            [
+              126.92402012421233,
+              37.580721972691336
+            ],
+            [
+              126.92400640821057,
+              37.580553898670495
+            ],
+            [
+              126.92426485849151,
+              37.58041969098095
+            ],
+            [
+              126.92448850866882,
+              37.58043208767517
+            ],
+            [
+              126.92462476184325,
+              37.580415019762846
+            ],
+            [
+              126.9247299556418,
+              37.580447538627375
+            ],
+            [
+              126.92478765353346,
+              37.58059019044197
+            ],
+            [
+              126.92470864482915,
+              37.58071577434423
+            ],
+            [
+              126.92471147871382,
+              37.580792759611924
+            ],
+            [
+              126.92474945276825,
+              37.58090432985986
+            ],
+            [
+              126.92469855619977,
+              37.58103530362917
+            ],
+            [
+              126.92456627046387,
+              37.58103512396694
+            ],
+            [
+              126.92451163316764,
+              37.5810185052102
+            ],
+            [
+              126.92432765737556,
+              37.58101212720086
+            ],
+            [
+              126.92430861367065,
+              37.58102111031261
+            ],
+            [
+              126.92426395164841,
+              37.58104222062522
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "462990139",
+        "name": "방목학술정보관",
+        "completed": "2010-01-20",
+        "above": 4,
+        "below": 3,
+        "use": "도서관",
+        "sources": [
+          "mju-register"
+        ],
+        "demolished": null,
+        "completionEvidence": "inherited-branch-pdf-transcription",
+        "state": "present",
+        "grade": "estimated",
+        "reason": "persistence after completion assumed; historical outline unverified",
+        "snapshotDate": "2026-10-22",
+        "geometryGrade": "estimated",
+        "geometryBasis": "current OSM outline proxy; not extracted historical roof",
+        "geometrySource": "osm",
+        "heightMetres": 12,
+        "heightGrade": "estimated",
+        "heightBasis": "documented above-ground storeys times assumed 3 metres"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "1127358152",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              126.92156915404819,
+              37.579957599712536
+            ],
+            [
+              126.92158082965298,
+              37.5797577254761
+            ],
+            [
+              126.92168749707156,
+              37.579761588214154
+            ],
+            [
+              126.92169611208092,
+              37.57961390585699
+            ],
+            [
+              126.92179994561484,
+              37.579617678763924
+            ],
+            [
+              126.92180640687187,
+              37.57950808480057
+            ],
+            [
+              126.9218085606242,
+              37.579471074380166
+            ],
+            [
+              126.92187249306211,
+              37.57947340998922
+            ],
+            [
+              126.92188938301469,
+              37.57918657923104
+            ],
+            [
+              126.92209047547011,
+              37.57900592885375
+            ],
+            [
+              126.92239970896414,
+              37.57901419331656
+            ],
+            [
+              126.9229622917467,
+              37.579029284944305
+            ],
+            [
+              126.92376416774991,
+              37.57957339202299
+            ],
+            [
+              126.92375623287286,
+              37.579683974128635
+            ],
+            [
+              126.92378842580258,
+              37.579709486166
+            ],
+            [
+              126.92378128441324,
+              37.57978278835788
+            ],
+            [
+              126.92377504986699,
+              37.5798475565936
+            ],
+            [
+              126.92356307529448,
+              37.58003036291771
+            ],
+            [
+              126.92348486007788,
+              37.58002748832195
+            ],
+            [
+              126.92156915404819,
+              37.579957599712536
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "1127358152",
+        "name": "MCC · 교육복합시설",
+        "completed": "2021-08-23",
+        "above": 2,
+        "below": 2,
+        "use": "교육복합시설",
+        "sources": [
+          "mju-register"
+        ],
+        "demolished": null,
+        "completionEvidence": "inherited-branch-pdf-transcription",
+        "state": "present",
+        "grade": "estimated",
+        "reason": "persistence after completion assumed; historical outline unverified",
+        "snapshotDate": "2026-10-22",
+        "geometryGrade": "estimated",
+        "geometryBasis": "current OSM outline proxy; not extracted historical roof",
+        "geometrySource": "osm",
+        "heightMetres": 6,
+        "heightGrade": "estimated",
+        "heightBasis": "documented above-ground storeys times assumed 3 metres"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "462990142",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              126.92312631699079,
+              37.58116196550485
+            ],
+            [
+              126.92312325639536,
+              37.58103296802012
+            ],
+            [
+              126.9230663519914,
+              37.580903162055336
+            ],
+            [
+              126.92297532761613,
+              37.580800395256915
+            ],
+            [
+              126.9228326131847,
+              37.58071703197987
+            ],
+            [
+              126.92262993375385,
+              37.58066492993173
+            ],
+            [
+              126.92264999765725,
+              37.58053215954006
+            ],
+            [
+              126.92281164243822,
+              37.58056126482213
+            ],
+            [
+              126.92293860047096,
+              37.58061166007905
+            ],
+            [
+              126.92303857992174,
+              37.580666097736255
+            ],
+            [
+              126.92313164469394,
+              37.5807233201581
+            ],
+            [
+              126.92319807095036,
+              37.58080326985267
+            ],
+            [
+              126.92327345228229,
+              37.58091322314049
+            ],
+            [
+              126.92331267324597,
+              37.580996496586415
+            ],
+            [
+              126.92332094818919,
+              37.581052281710384
+            ],
+            [
+              126.9233225351646,
+              37.58111219906576
+            ],
+            [
+              126.92330655205511,
+              37.58119062163133
+            ],
+            [
+              126.92312631699079,
+              37.58116196550485
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "462990142",
+        "name": "인문생활관",
+        "completed": null,
+        "knownBy": "2006-02-28",
+        "completionDatePrecision": "month-upper-bound",
+        "above": 7,
+        "below": 2,
+        "use": "생활관",
+        "sources": [
+          "mju-2000",
+          "mju-dorm"
+        ],
+        "demolished": null,
+        "completionEvidence": "new-construction opening in 2006-02; day unknown; month-end conservative bound",
+        "conflict": "시설 소개 2006-03 설립. 실제 준공일 미확인.",
+        "state": "present",
+        "grade": "estimated",
+        "reason": "existence documented by opening month; subsequent persistence assumed; historical outline unverified",
+        "snapshotDate": "2026-10-22",
+        "geometryGrade": "estimated",
+        "geometryBasis": "current OSM outline proxy; not extracted historical roof",
+        "geometrySource": "osm",
+        "heightMetres": 21,
+        "heightGrade": "estimated",
+        "heightBasis": "documented above-ground storeys times assumed 3 metres"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "old-humanities-gym",
+      "geometry": null,
+      "properties": {
+        "id": "old-humanities-gym",
+        "name": "옛 인문캠퍼스 실내체육관",
+        "completed": null,
+        "above": null,
+        "below": null,
+        "use": "실내체육시설",
+        "sources": [
+          "mju-gym-news"
+        ],
+        "demolished": null,
+        "completionEvidence": "indexed secondary account: completed 1972; exact demolition and footprint unverified",
+        "reportedCompletionYear": 1972,
+        "replacement": "방목학술정보관 부지로 교체 서술. 도서관 현 윤곽을 옛 체육관 윤곽으로 복사하지 않음.",
+        "state": "unknown",
+        "grade": "unverified",
+        "reason": "no positive observation for this date; completion is not a construction-start date",
+        "snapshotDate": "2026-10-22",
+        "heightMetres": null
+      }
+    }
+  ],
+  "attribution": "© OpenStreetMap contributors · ODbL-1.0",
+  "licenseUrl": "https://www.openstreetmap.org/copyright",
+  "warning": "Historical geometries are current-outline proxies, not reconstructed roofs. Null geometry means unknown, not absent."
+}
