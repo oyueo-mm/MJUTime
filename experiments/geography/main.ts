@@ -3,15 +3,20 @@ import {Navigation} from './navigation'
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js'
 import {mapData as data,heightAt,inRing,project,type Point} from './spatial'
 import {historicalMarkers,yearNotes,sources,type Year} from './history'
-import {featuresFor,worldRing} from './historical-geometry'
+import {featuresFor,worldRing,type Epoch} from './historical-geometry'
 import {TimeScene} from './time-scene'
 import {events,monthIndex,splitMonth,monthLabel,MIN_MONTH,MAX_MONTH,clampMonth,referenceEpoch,photoMonth,isCurrent,eventsInMonth,eventMonth,dateLabel,advancePlayback,trackedBuildings,buildingKnown,projectStage,projectSources} from './timeline'
 import {defaults,type CameraSettings} from './camera-settings'
 import {registered,registerSource,featureEvidence} from './campus-evidence'
+import {MccScene,inMccPatch,mccFootprint} from './mcc'
+import {StoryScroll} from './story-scroll'
 import './style.css'
 
 document.querySelector('#map')!.innerHTML=`<header><div><small>MJUTime / GEOGRAPHIC STUDY · 실험 브랜치</small><h1>남가좌동에서 홍은동까지</h1><p>건물의 모양보다, 먼저 실제 공간.</p></div><span class="badge">공개 사이트와 분리된 시제품</span></header><main><div id="viewport" aria-label="남가좌동·홍은동 실제 좌표 3D 지도"><div id="labels"></div><div class="map-tools"><button id="home">사선 보기</button><button id="top">위에서 보기 · 북쪽 ↑</button></div><div class="map-caption"><b id="map-state"></b><span>드래그 회전 · 휠 확대 · 우클릭 이동</span></div></div><aside><small>세 시점의 비교</small><nav aria-label="비교 연도">${[1985,2001,2026].map(y=>`<button data-year="${y}" aria-pressed="${y===2026}">${y}</button>`).join('')}</nav><h2 id="year-title"></h2><div id="notes"></div><label id="context-option" hidden><input id="context" type="checkbox"/> 현재 건물·도로 겹쳐 비교 <em>과거 복원 아님</em></label><div class="source-list" id="sources"></div><div class="limits"><b>확인할 수 있는 것과 없는 것</b><p>윤곽은 OSM 관측값, 지형은 저해상도 DEM입니다. 건물 높이·옹벽·절토면·과거 골목은 정확히 복원하지 않았습니다.</p><p>1985·2001 항공영상의 위치·촬영시점 검증이 완료되지 않아 과거 건물은 표식만 제공합니다.</p></div></aside></main><footer><div class="key"><i style="--key:#3975cc"></i>명지대 <i style="--key:#199282"></i>전문대 <i style="--key:#d59539"></i>초등학교 <i style="--key:#8b69bb"></i>중학교 <i style="--key:#c96879"></i>고등학교</div><p>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors · ODbL</a> · 고도: <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">Mapzen Terrain Tiles / USGS SRTM·GMTED</a><br/>고도 배율 1× · 실제 좌표, 높이 일부 추정 · 학교 경계는 현행 OSM 참조</p></footer>`
 const host=document.querySelector<HTMLElement>('#viewport')!
+const journey=document.createElement('div');journey.id='journey'
+const stage=document.querySelector('main')!;stage.before(journey);journey.append(stage)
+journey.insertAdjacentHTML('beforeend','<div id="scroll-track" aria-hidden="true"></div>')
 document.querySelector('.limits p:last-child')!.textContent='과거 황토색은 항공사진 국소 전사입니다. 지붕 높이 3m는 표현용이며 정사보정되지 않았습니다. 현재 DEM을 사용하므로 당시 지반고가 아닙니다. 빈 곳은 미조사 영역입니다.'
 const labelHost=document.querySelector<HTMLElement>('#labels')!
 const leaders=document.createElementNS('http://www.w3.org/2000/svg','svg');leaders.id='leaders';host.append(leaders)
@@ -26,7 +31,8 @@ const camera=new THREE.PerspectiveCamera(38,1,2,15000)
 const terrainGroup=new THREE.Group(),currentGroup=new THREE.Group(),markerGroup=new THREE.Group()
 const historicalGroup=new THREE.Group(),eventGroup=new THREE.Group()
 const timeScene=new TimeScene()
-scene.add(terrainGroup,currentGroup,markerGroup,historicalGroup,eventGroup,timeScene.group)
+const mccScene=new MccScene();terrainGroup.add(mccScene.patch)
+scene.add(terrainGroup,currentGroup,markerGroup,historicalGroup,eventGroup,timeScene.group,mccScene.group)
 const palette:Record<string,string>={university:'#3975cc',college:'#199282',elementary:'#d59539',middle:'#8b69bb',high:'#c96879',background:'#c3c4bc'}
 function terrainMesh(){
   const t=data.terrain,positions:number[]=[],colors:number[]=[],indices:number[]=[]
@@ -34,7 +40,7 @@ function terrainMesh(){
   for(let j=0;j<t.rows;j++)for(let i=0;i<t.cols;i++){
     const h=t.heights[j*t.cols+i];positions.push(t.min[0]+(t.max[0]-t.min[0])*i/(t.cols-1),h,t.min[1]+(t.max[1]-t.min[1])*j/(t.rows-1))
     color.copy(lo).lerp(hi,Math.max(0,Math.min(1,(h-45)/190)));colors.push(color.r,color.g,color.b)
-    if(i<t.cols-1&&j<t.rows-1){const a=j*t.cols+i;indices.push(a,a+t.cols,a+1,a+1,a+t.cols,a+t.cols+1)}
+    if(i<t.cols-1&&j<t.rows-1&&!inMccPatch(t.min[0]+(t.max[0]-t.min[0])*(i+.5)/(t.cols-1),t.min[1]+(t.max[1]-t.min[1])*(j+.5)/(t.rows-1))){const a=j*t.cols+i;indices.push(a,a+t.cols,a+1,a+1,a+t.cols,a+t.cols+1)}
   }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals()
   terrainGroup.add(new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide})))
@@ -51,7 +57,18 @@ document.querySelectorAll<HTMLInputElement>('[data-sensitivity]').forEach(input=
 document.querySelector<HTMLButtonElement>('#reset-camera')!.onclick=()=>{navigation.setSettings(defaults);syncCameraSettings()};syncCameraSettings()
 document.querySelector('.map-tools')!.insertAdjacentHTML('beforeend',`<select id="school-jump" aria-label="학교로 이동"><option value="">학교로 이동</option>${data.sites.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</select>`)
 document.querySelector<HTMLSelectElement>('#school-jump')!.onchange=e=>{const s=data.sites.find(s=>s.id===(e.target as HTMLSelectElement).value);if(s)navigation.travel(s.center as Point);(e.target as HTMLSelectElement).value=''}
-document.querySelector('.map-caption span')!.textContent='WASD 이동 · Q/E 높이 · 드래그 회전 · 우클릭 이동 · 휠 줌 · 더블클릭 이동'
+document.querySelector('.map-tools')!.insertAdjacentHTML('beforeend','<button id="explore" aria-pressed="false">자유 탐험</button>')
+let exploring=false
+function interactionMode(){
+  navigation.controls.enableZoom=exploring
+  navigation.controls.enabled=exploring||!matchMedia('(pointer: coarse)').matches
+  renderer.domElement.style.touchAction=exploring?'none':'pan-y'
+  document.querySelector('#explore')!.setAttribute('aria-pressed',String(exploring))
+  document.querySelector('#explore')!.textContent=exploring?'스크롤 여행으로':'자유 탐험'
+  document.querySelector('.map-caption span')!.textContent=exploring?'WASD · Q/E · 드래그 회전 · 휠/두 손가락 줌 · 더블클릭 이동':'아래로 스크롤 → 과거 · 위로 → 현재 · 줌/터치 회전은 자유 탐험'
+  if(story){story.enabled=!exploring;story.sync(timeIndex)}
+}
+document.querySelector<HTMLButtonElement>('#explore')!.onclick=()=>{exploring=!exploring;interactionMode()}
 function drapedLine(p:number[][],color:string,y=1){
   const points:THREE.Vector3[]=[]
   p.forEach((a,i)=>{if(!i)return;const b=p[i-1],steps=Math.ceil(Math.hypot(a[0]-b[0],a[1]-b[1])/10);for(let j=0;j<=steps;j++){const t=j/steps,x=b[0]+(a[0]-b[0])*t,z=b[1]+(a[1]-b[1])*t;points.push(new THREE.Vector3(x,heightAt(x,z)+y,z))}})
@@ -67,6 +84,7 @@ for(const road of data.roads){
     const ox=-dz/len*width/2,oz=dx/len*width/2,n=Math.ceil(len/10)
     for(let s=0;s<n;s++){
       const ax=b[0]+dx*s/n,az=b[1]+dz*s/n,bx=b[0]+dx*(s+1)/n,bz=b[1]+dz*(s+1)/n
+      if(inRing([(ax+bx)/2,(az+bz)/2],mccFootprint))continue // current campus circulation is represented by the stepped model
       const corners=[[ax+ox,az+oz],[ax-ox,az-oz],[bx+ox,bz+oz],[bx-ox,bz-oz]]
       for(const index of [0,2,1,1,2,3]){const [x,z]=corners[index];roadPositions.push(x,heightAt(x,z)+.75,z);roadColors.push(color.r,color.g,color.b)}
     }
@@ -79,6 +97,7 @@ const housingArea=data.areas.find(a=>a.id==='1126398129')!
 let footprintCount=0
 for(const b of data.buildings){
   if(b.p.length<3)continue
+  if(b.id==='1127358152'){footprintCount++;continue} // dedicated multi-level model, never duplicate OSM slab
   const site=data.sites.find(s=>inRing(b.center,s.p))
   const key=site?.id??'background'
   const shape=new THREE.Shape(b.p.map(([x,z])=>new THREE.Vector2(x,-z)))
@@ -111,15 +130,16 @@ const t=data.terrain
 for(let level=40;level<=240;level+=20)for(let j=0;j<t.rows-1;j++)for(let i=0;i<t.cols-1;i++){
   const corners=[[i,j],[i+1,j],[i+1,j+1],[i,j+1]],hits:number[][]=[]
   for(let k=0;k<4;k++){const [ax,az]=corners[k],[bx,bz]=corners[(k+1)%4],a=t.heights[az*t.cols+ax],b=t.heights[bz*t.cols+bx];if((a<level)===(b<level))continue;const f=(level-a)/(b-a);hits.push([t.min[0]+(t.max[0]-t.min[0])*(ax+(bx-ax)*f)/(t.cols-1),level+.5,t.min[1]+(t.max[1]-t.min[1])*(az+(bz-az)*f)/(t.rows-1)])}
-  for(let k=0;k+1<hits.length;k+=2)contourPoints.push(...hits[k],...hits[k+1])
+  for(let k=0;k+1<hits.length;k+=2)if(!inMccPatch((hits[k][0]+hits[k+1][0])/2,(hits[k][2]+hits[k+1][2])/2))contourPoints.push(...hits[k],...hits[k+1])
 }
 terrainGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(contourPoints,3)),new THREE.LineBasicMaterial({color:'#99ad97',transparent:true,opacity:.3})))
 let timeIndex=MAX_MONTH,year:Year=referenceEpoch(timeIndex),context=false,frame=0,playing=false,speed=6,carry=0,lastFrame=0,pendingUpdate=false,photoReference=false
+let story:StoryScroll|undefined
 document.querySelector('aside>small')!.textContent='연속 시간 탐험 · 자료는 이산 관측'
 document.querySelector('aside nav')!.setAttribute('aria-label','관측 바로가기')
 document.querySelector('aside nav')!.insertAdjacentHTML('beforebegin',`<section class="timeline" aria-label="시간 탐험"><div class="date-row"><output id="current-month"></output><input id="date-input" aria-label="연도와 월" type="month" min="1948-01" max="${monthLabel(MAX_MONTH).replace('.','-')}"/></div><input id="time-slider" aria-label="시간 슬라이더" type="range" min="${MIN_MONTH}" max="${MAX_MONTH}" step="1" value="${MAX_MONTH}"/><div class="timeline-marks" aria-hidden="true">${events.filter(e=>e.date.month).map(e=>`<i title="${dateLabel(e.date)} ${e.title}" style="left:${(eventMonth(e)-MIN_MONTH)/(MAX_MONTH-MIN_MONTH)*100}%"></i>`).join('')}</div><div class="playback"><button id="previous-event" aria-label="이전 사건">←</button><button id="play" aria-label="자동 재생" aria-pressed="false">재생</button><button id="next-event" aria-label="다음 사건">→</button><select id="play-speed" aria-label="재생 속도"><option value="1">1개월/초</option><option value="6" selected>6개월/초</option><option value="24">2년/초</option><option value="120">10년/초</option></select></div><p id="time-resolution"></p><div id="month-events"></div><label class="reference-option"><input id="photo-reference" type="checkbox"/> 이전 관측 형상 참조 <em>선택 월의 존재 증거 아님</em></label></section>`)
 const slider=document.querySelector<HTMLInputElement>('#time-slider')!,dateInput=document.querySelector<HTMLInputElement>('#date-input')!
-function setTime(value:number,pause=true){timeIndex=clampMonth(value);if(pause)setPlaying(false);pendingUpdate=true}
+function setTime(value:number,pause=true,fromScroll=false){timeIndex=clampMonth(value);if(pause)setPlaying(false);pendingUpdate=true;if(!fromScroll)story?.sync(timeIndex)}
 function setPlaying(value:boolean){playing=value;carry=0;document.querySelector('#play')!.setAttribute('aria-pressed',String(value));document.querySelector('#play')!.textContent=value?'일시정지':'재생'}
 slider.oninput=()=>setTime(Number(slider.value))
 dateInput.oninput=()=>{const match=/^(\d{4})-(\d{2})$/.exec(dateInput.value);if(match&&+match[2]>=1&&+match[2]<=12)setTime(monthIndex(+match[1],+match[2]))}
@@ -134,13 +154,14 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)setPlaying(
 const historyFocus=document.createElement('select');historyFocus.id='history-focus';historyFocus.setAttribute('aria-label','공간 사용과 이전 기록')
 document.querySelector('#notes')!.before(historyFocus)
 const eventNote=document.createElement('p');eventNote.id='event-note';historyFocus.after(eventNote)
+eventNote.insertAdjacentHTML('afterend','<section id="story-caption" aria-label="이 시기의 기록"></section>')
 function clearGroup(group:THREE.Group){
   for(const child of group.children.slice()){group.remove(child);child.traverse(o=>{if(o instanceof THREE.Mesh||o instanceof THREE.Line){o.geometry.dispose();const materials=Array.isArray(o.material)?o.material:[o.material];materials.forEach(m=>m.dispose())}})}
 }
 const photoCache=new Map<number,THREE.Group>()
-let historicalBuilds=0,shownPhoto:1985|2001|null=null
+let historicalBuilds=0,shownPhoto:Epoch|null=null
 function renderHistorical(){
-  shownPhoto=photoMonth(timeIndex)??(timeIndex>=monthIndex(1998,1)&&timeIndex<monthIndex(2001,9)?2001:photoReference?(timeIndex>monthIndex(2001,9)?2001:timeIndex>monthIndex(1985,10)?1985:null):null)
+  shownPhoto=photoMonth(timeIndex)??(timeIndex>=monthIndex(2016,10)&&timeIndex<monthIndex(2016,11)?2016:timeIndex>=monthIndex(2006,11)&&timeIndex<monthIndex(2016,10)?2006:timeIndex>=monthIndex(2001,9)&&timeIndex<monthIndex(2006,11)?2001:timeIndex>=monthIndex(1997,10)&&timeIndex<monthIndex(2001,9)?1997:photoReference?(timeIndex>monthIndex(2001,9)?2001:timeIndex>monthIndex(1985,10)?1985:null):null)
   historicalGroup.children.forEach(g=>g.visible=false)
   if(shownPhoto===null)return
   const existing=photoCache.get(shownPhoto)
@@ -149,7 +170,7 @@ function renderHistorical(){
   const photoGroup=new THREE.Group();historicalGroup.add(photoGroup);photoCache.set(shownPhoto,photoGroup);historicalBuilds++
   for(const feature of featuresFor(shownPhoto)){
     const group=new THREE.Group();group.userData.featureId=feature.id;photoGroup.add(group)
-    const ring=worldRing(feature),color=feature.kind==='roof'?'#bc884b':feature.kind==='field'?'#9eac70':'#8c7060'
+    const ring=worldRing(feature),color=feature.kind==='roof'?'#bc884b':feature.id.includes('cleared')?'#b59b7e':feature.kind==='field'?'#9eac70':'#8c7060'
     if(feature.kind==='road'){group.add(drapedLine(ring,color,2));continue}
     if(feature.kind==='field'){
       // Dense triangles prevent a coarse polygon cutting through the DEM.
@@ -218,18 +239,20 @@ function update(){
   year=referenceEpoch(timeIndex)
   const current=isCurrent(timeIndex),monthEvents=eventsInMonth(timeIndex),known=trackedBuildings.filter(b=>buildingKnown(b.id,timeIndex))
   const notes=yearNotes[year]
-  renderHistorical();timeScene.update(timeIndex,current)
+  renderHistorical();timeScene.update(timeIndex,current);mccScene.update(timeIndex)
   if(timeIndex!==lastUpdatedMonth){
     historyFocus.innerHTML='<option value="">공간 사용·이전·재개발 기록</option>'+events.map(e=>`<option value="${e.id}">${dateLabel(e.date)} ${e.title}</option>`).join('')
     historyFocus.value=monthEvents[0]?.id??'';showEvent();lastUpdatedMonth=timeIndex
   }
   document.querySelector<HTMLOutputElement>('#current-month')!.value=monthLabel(timeIndex)
   slider.value=String(timeIndex);slider.setAttribute('aria-valuetext',monthLabel(timeIndex));dateInput.value=monthLabel(timeIndex).replace('.','-')
-  document.querySelector('#year-title')!.textContent=monthEvents[0]?.title??`${monthLabel(timeIndex)} · 월별 형상 미확인`
-  const resolution=current?'현재 OSM 수집 월 · 준공일 아님':photoMonth(timeIndex)?'항공사진 국소 전사 · 촬영일만 관측, 월 내 변화 미확인':shownPhoto?`${shownPhoto} 관측 형상 참조 · 선택 월의 존재 증거 아님`:'해당 월 항공 형상 미확인 · 건물 부재를 뜻하지 않음'
-  document.querySelector('#time-resolution')!.textContent=`${resolution} · 월말 요약(현재 월은 수집 시점), 월 내 순서 미복원`
-  document.querySelector('#notes')!.innerHTML=`<p>황갈색 건물: 준공 기록 이후 존치 가정 + 현재 OSM 윤곽·층고 3m 추정. 황토색 낮은 매스: 항공사진 전사(표현 높이 3m). 반투명 운동장·도로: 1997 열람과 2001 전사 사이 참조 추정. 서로 다른 근거이며 빈 곳은 부재가 아닌 미조사입니다.</p><p><a href="${registerSource}" target="_blank" rel="noopener">공식 건축물 현황 · 준공일/층수 ↗</a></p><details><summary>기존 ${year} 조사 기록 · 선택 월의 관측 아님</summary>${notes.paragraphs.map(p=>`<p>${p}</p>`).join('')}</details>`
+  document.querySelector('#year-title')!.textContent=monthEvents[0]?.title??`${monthLabel(timeIndex)} · 존재 기록과 관측 참조`
+  const resolution=current?'현재 OSM · MCC 레벨 추정':photoMonth(timeIndex)?'항공사진 국소 전사 + 준공 기록 참조':known.length?`준공 근거 건물 ${known.length}개 · 과거 외형 추정`:'해당 월 항공 형상 미확인 · 건물 부재를 뜻하지 않음'
+  document.querySelector('#time-resolution')!.textContent=`${resolution}${shownPhoto?` · ${shownPhoto} 전사 레이어(정사보정 아님)`:''}${photoReference?' · 이전 관측 참조: 선택 월의 존재 증거 아님':''} · 월말 요약, 월 내 순서 미복원`
+  document.querySelector('#notes')!.innerHTML=`<p>황갈색 건물: 준공 기록 이후 존치 가정 + 현재 OSM 윤곽·층고 3m 추정. 황토색 낮은 매스: 항공사진 전사(표현 높이 3m). 반투명 운동장·도로: 1997·2001·2006·2016 관측 사이 존치 참조 추정. 개별 주택과 나지는 촬영 월만 표시합니다. 빈 곳은 부재가 아닌 미조사입니다.</p><p>MCC: 두 홀·중앙 계단·단차 있는 녹화 옥상은 사진 근거. 대장 지하 2층/지상 2층과 안내의 총 4개 층을 구분합니다. 층고 3.8m, 분할선·선큰 깊이·DEM 접합은 추정이며 실측 복원이 아닙니다.</p><p><a href="${registerSource}" target="_blank" rel="noopener">공식 건축물 현황 · 준공일/층수 ↗</a></p><details><summary>기존 ${year} 조사 기록 · 선택 월의 관측 아님</summary>${notes.paragraphs.map(p=>`<p>${p}</p>`).join('')}</details>`
   document.querySelector('#month-events')!.innerHTML=monthEvents.map(e=>`<button data-event="${e.id}">${dateLabel(e.date)} · ${e.title}</button>`).join('')
+  const chapter=events.filter(e=>e.date.month&&eventMonth(e)<=timeIndex).sort((a,b)=>eventMonth(b)-eventMonth(a))[0]
+  document.querySelector('#story-caption')!.innerHTML=chapter?`<small>가장 가까운 앞선 기록 · 존속 기간 아님</small><h3>${dateLabel(chapter.date)} · ${chapter.title}</h3><p>${chapter.note}</p><a href="${chapter.sourceUrl}" target="_blank" rel="noopener">기록 원문 ↗</a>`:'<p>이 시기 공간 형상은 미조사입니다. 비어 있는 지도는 건물 부재를 의미하지 않습니다.</p>'
   document.querySelectorAll<HTMLButtonElement>('[data-event]').forEach(b=>b.onclick=()=>{historyFocus.value=b.dataset.event!;showEvent(true)})
   document.querySelector('#sources')!.innerHTML='<b>관련 자료와 기존 조사 출처</b>'+monthEvents.map(e=>`<a href="${e.sourceUrl}" target="_blank" rel="noopener">${e.title} · 원자료 ↗</a>`).join('')+notes.sourceIds.map(id=>`<a href="${sources[id].url}" target="_blank" rel="noopener">${sources[id].title} ↗</a>`).join('')
   document.querySelectorAll<HTMLButtonElement>('[data-year]').forEach(b=>{const y=Number(b.dataset.year);b.setAttribute('aria-pressed',String(timeIndex===monthIndex(y,y===1985?10:y===2001?9:10)))})
@@ -243,14 +266,17 @@ function update(){
   labels.splice(0);labelHost.replaceChildren();leaders.replaceChildren()
   markerGroup.children.slice().forEach(o=>{markerGroup.remove(o);if(o instanceof THREE.Mesh){o.geometry.dispose();(o.material as THREE.Material).dispose()}})
   if(current){for(const site of data.sites)addLabel(site.name,'현행 OSM · 높이 일부 추정',site.center as Point,palette[site.id],`https://www.openstreetmap.org/way/${site.osmId}`)}
-  else if(photoMonth(timeIndex)){for(const marker of historicalMarkers[photoMonth(timeIndex)!])addLabel(marker.label,marker.note,project(marker.lon,marker.lat),'#ad7430',sources[marker.source].url)}
-  else for(const b of known){const e=events.find(e=>e.id===b.eventId)!;if(e.position)addLabel(registered(b.id)?.name??e.title,'존재 근거 있음 · 과거 외형은 현 윤곽 추정',e.position,b.color,e.sourceUrl)}
+  else {
+    for(const b of known){const e=events.find(e=>e.id===b.eventId)!;if(e.position)addLabel(registered(b.id)?.name??e.title,'존재 근거 있음 · 과거 외형은 현 윤곽 추정',e.position,b.color,e.sourceUrl)}
+    if(photoMonth(timeIndex))for(const marker of historicalMarkers[photoMonth(timeIndex)!])addLabel(marker.label,marker.note,project(marker.lon,marker.lat),'#ad7430',sources[marker.source].url)
+  }
   for(const e of monthEvents)if(e.position)addLabel(e.title,dateLabel(e.date),e.position,'#ca7537',e.sourceUrl,()=>{historyFocus.value=e.id;showEvent(true)})
   if(projectStage('namgajwa1',timeIndex)!=='unknown')addLabel('남가좌1 · 재건축 단계','주소 권역 기호 · 지구계/건물 복원 아님',[-620,195],'#b6803c',projectSources.namgajwa)
   if(projectStage('hongeun2',timeIndex)!=='unknown')addLabel('홍은2 · 현재 단지 범위 참조','선/격자 = 단계 참조 · 월별 공정률 아님',[-148,-377],'#699b8b',projectSources.hongeun2)
   addLabel('백련산','공개 DEM · 고도 배율 1×',project(126.9343,37.5886),'#6c8e69')
 }
 update()
+story=new StoryScroll(journey,m=>setTime(m,true,true),()=>timeIndex);interactionMode()
 document.querySelectorAll<HTMLButtonElement>('[data-year]').forEach(button=>button.onclick=()=>{const y=Number(button.dataset.year);context=false;document.querySelector<HTMLInputElement>('#context')!.checked=false;setTime(monthIndex(y,y===1985?10:y===2001?9:10));update();pendingUpdate=false})
 document.querySelector<HTMLInputElement>('#context')!.onchange=e=>{context=(e.target as HTMLInputElement).checked;update()}
 document.querySelector<HTMLButtonElement>('#home')!.onclick=home
@@ -260,9 +286,9 @@ const observer=new ResizeObserver(resize);observer.observe(host);resize()
 const point=new THREE.Vector3()
 renderer.setAnimationLoop((time)=>{
   const elapsed=lastFrame?(time-lastFrame)/1000:0;lastFrame=time
-  if(playing){const next=advancePlayback(timeIndex,carry,elapsed,speed);carry=next.carry;if(next.value!==timeIndex){timeIndex=next.value;pendingUpdate=true}if(next.ended)setPlaying(false)}
+  if(playing){const next=advancePlayback(timeIndex,carry,elapsed,speed);carry=next.carry;if(next.value!==timeIndex){timeIndex=next.value;pendingUpdate=true;story?.sync(timeIndex)}if(next.ended)setPlaying(false)}
   if(pendingUpdate){update();pendingUpdate=false}
-  timeScene.tick(time);navigation.tick();renderer.render(scene,camera);frame++
+  timeScene.tick(time);mccScene.tick(time);navigation.tick();renderer.render(scene,camera);frame++
   const occupied:{x:number;y:number;w:number;h:number}[]=[]
   const tools=document.querySelector<HTMLElement>('.map-tools')!,topInset=Math.max(85,tools.offsetTop+tools.offsetHeight+12)
   for(const label of labels){
@@ -282,6 +308,7 @@ renderer.setAnimationLoop((time)=>{
     occupied.push({x:bx,y:by-h/2,w,h})
   }
 })
-declare global{interface Window{__GEO_STUDY__?:()=>{year:number;month:number;timeIndex:number;playing:boolean;speed:number;historicalBuilds:number;geometries:number;cameraSettings:CameraSettings;knownBuildings:string[];projectStage:string;housingStage:string;housingCount:number;buildingScales:Record<string,number>;frame:number;footprints:number;historicalFeatures:number;eventObjects:number;currentVisible:boolean;calls:number;triangles:number;camera:number[];target:number[];terrainRange:number[];labels:string[]}}}
-window.__GEO_STUDY__=()=>({...splitMonth(timeIndex),timeIndex,playing,speed,historicalBuilds,geometries:renderer.info.memory.geometries,cameraSettings:{...navigation.settings},...timeScene.debug(),frame,footprints:footprintCount,historicalFeatures:shownPhoto?featuresFor(shownPhoto).length:0,eventObjects:eventGroup.children.length,currentVisible:currentGroup.visible,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,camera:camera.position.toArray(),target:controls.target.toArray(),terrainRange:[Math.min(...t.heights),Math.max(...t.heights)],labels:labels.map(l=>l.element.textContent??'')})
-window.addEventListener('pagehide',()=>{renderer.setAnimationLoop(null);observer.disconnect();navigation.dispose();scene.traverse(o=>{if(o instanceof THREE.Mesh||o instanceof THREE.Line){o.geometry.dispose();const m=Array.isArray(o.material)?o.material:[o.material];m.forEach(m=>m.dispose())}});renderer.dispose();delete window.__GEO_STUDY__},{once:true})
+function studyState(){return{...splitMonth(timeIndex),timeIndex,playing,speed,exploring,mcc:mccScene.debug,historicalBuilds,geometries:renderer.info.memory.geometries,cameraSettings:{...navigation.settings},...timeScene.debug(),frame,footprints:footprintCount,historicalFeatures:shownPhoto?photoCache.get(shownPhoto)!.children.filter(c=>c.visible).length:0,eventObjects:eventGroup.children.length,currentVisible:currentGroup.visible,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,camera:camera.position.toArray(),target:controls.target.toArray(),terrainRange:[Math.min(...t.heights),Math.max(...t.heights)],labels:labels.map(l=>l.element.textContent??'')}}
+declare global{interface Window{__GEO_STUDY__?:typeof studyState}}
+window.__GEO_STUDY__=studyState
+window.addEventListener('pagehide',()=>{renderer.setAnimationLoop(null);observer.disconnect();story?.dispose();navigation.dispose();scene.traverse(o=>{if(o instanceof THREE.Mesh||o instanceof THREE.Line){o.geometry.dispose();const m=Array.isArray(o.material)?o.material:[o.material];m.forEach(m=>m.dispose())}});renderer.dispose();delete window.__GEO_STUDY__},{once:true})

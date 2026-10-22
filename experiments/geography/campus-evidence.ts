@@ -21,15 +21,18 @@ export const legacyCampus=campusRegister.slice(0,5)
  * Never carry a field across an unobserved redevelopment or into the MCC period.
  */
 export function featureEvidence(id:string,month:number):'observed'|'reference'|'hidden'{
-  const exact=id.startsWith('85-')?1985*12+9:2001*12+8
+  const epoch=id.startsWith('85-')?1985:id.startsWith('97-')?1997:id.startsWith('06-')?2006:id.startsWith('16-')?2016:2001
+  const exact=epoch*12+({1985:9,1997:9,2001:8,2006:10,2016:9}[epoch])
   if(month===exact)return 'observed'
+  const next=epoch===1997?2001*12+8:epoch===2001?2006*12+10:epoch===2006?2016*12+9:exact
+  if(month>exact&&month<next&&(id.endsWith('-field')||id.endsWith('-road')))return 'reference'
   // Local 1985 unknown roofs/road are not identifiable as surviving structures.
   if(id.startsWith('85-'))return 'hidden'
   // Main and union persistence has independent physical-register evidence.
   if(id==='01-main'||id==='01-union')return 'hidden' // registered current-outline model instead
   // 1997 preview confirms the field, 2001 trace locates it. Last independently
   // dated view here remains 2001: do not claim it survived up to MCC construction.
-  if(id==='01-university-field')return month>=1998*12&&month<=2001*12+8?'reference':'hidden'
-  if(id==='01-road')return month>=1998*12&&month<=2001*12+8?'reference':'hidden'
+  if(id==='01-university-field')return month>=1997*12+9&&month<2016*12+9?'reference':'hidden'
+  if(id==='01-road')return month>=1997*12+9&&month<2006*12+10?'reference':'hidden'
   return 'hidden'
 }

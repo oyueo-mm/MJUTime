@@ -1,0 +1,282 @@
+{
+  "method": "manual-affine roof centres, 1100px preview width; present OSM correspondences inferred; not orthorectified or survey accuracy",
+  "records": [
+    {
+      "year": 1997,
+      "month": 10,
+      "day": 13,
+      "dateEvidence": "date printed on image margin, manually read",
+      "objectId": "2762727",
+      "zone": "199710A0302",
+      "course": 25,
+      "number": 12,
+      "imageSha256": "2ada02628406d54665824d7f0366fdcdfb615864613633c07ac07e30086ca5d3",
+      "matrix": [
+        [
+          1.042987206735464,
+          0.06937953791417181
+        ],
+        [
+          -0.10988794465536444,
+          1.4131961524913472
+        ],
+        [
+          -562.6245580321486,
+          -617.6472495215061
+        ]
+      ],
+      "gcps": [
+        {
+          "osmId": "462990137",
+          "pixel": [
+            272,
+            627
+          ],
+          "world": [
+            -348.97,
+            281.48
+          ]
+        },
+        {
+          "osmId": "462990141",
+          "pixel": [
+            337,
+            620
+          ],
+          "world": [
+            -271.61,
+            268.89
+          ]
+        },
+        {
+          "osmId": "640328305",
+          "pixel": [
+            195,
+            632
+          ],
+          "world": [
+            -432.65,
+            291.9
+          ]
+        },
+        {
+          "osmId": "462990138",
+          "pixel": [
+            366,
+            575
+          ],
+          "world": [
+            -237.24,
+            221.42
+          ]
+        },
+        {
+          "osmId": "462990140",
+          "pixel": [
+            420,
+            608
+          ],
+          "world": [
+            -200.2,
+            288.09
+          ]
+        },
+        {
+          "osmId": "463033408",
+          "pixel": [
+            651,
+            292
+          ],
+          "world": [
+            85.09,
+            -173.89
+          ]
+        },
+        {
+          "osmId": "463033409",
+          "pixel": [
+            594,
+            244
+          ],
+          "world": [
+            28.7,
+            -220.05
+          ]
+        }
+      ],
+      "fitRmsMetres": 12.242212256190136,
+      "leaveOneOutMaxMetres": 42.83346765763281,
+      "sourceUrl": "https://map.ngii.go.kr/ms/map/Aerial.do"
+    },
+    {
+      "year": 2006,
+      "month": 11,
+      "day": 29,
+      "dateEvidence": "date printed on image margin, manually read",
+      "objectId": "2748690",
+      "zone": "200611A0302",
+      "course": 25,
+      "number": 12,
+      "imageSha256": "7569598b6ddcdcc56671a0841a64ee2b80b9ae4fc1f441682fc7348e1ca809d3",
+      "matrix": [
+        [
+          1.0775652411794834,
+          0.03859915590161656
+        ],
+        [
+          0.09881814898933339,
+          1.206404768491292
+        ],
+        [
+          -721.8038237097293,
+          -473.7563647381088
+        ]
+      ],
+      "gcps": [
+        {
+          "osmId": "462990137",
+          "pixel": [
+            293,
+            614
+          ],
+          "world": [
+            -348.97,
+            281.48
+          ]
+        },
+        {
+          "osmId": "462990141",
+          "pixel": [
+            365,
+            610
+          ],
+          "world": [
+            -271.61,
+            268.89
+          ]
+        },
+        {
+          "osmId": "640328305",
+          "pixel": [
+            208,
+            628
+          ],
+          "world": [
+            -432.65,
+            291.9
+          ]
+        },
+        {
+          "osmId": "462990138",
+          "pixel": [
+            397,
+            563
+          ],
+          "world": [
+            -237.24,
+            221.42
+          ]
+        },
+        {
+          "osmId": "462990140",
+          "pixel": [
+            425,
+            615
+          ],
+          "world": [
+            -200.2,
+            288.09
+          ]
+        }
+      ],
+      "fitRmsMetres": 4.887543282480192,
+      "leaveOneOutMaxMetres": 43.095415156968336,
+      "sourceUrl": "https://map.ngii.go.kr/ms/map/Aerial.do"
+    },
+    {
+      "year": 2016,
+      "month": 10,
+      "day": 11,
+      "dateEvidence": "date printed on image margin, manually read",
+      "objectId": "2700585",
+      "zone": "201606A0101",
+      "course": 26,
+      "number": 14,
+      "imageSha256": "5258b16fa34b5af7b8a255ebed126ede464f562562079569a948845d8cbe3e19",
+      "matrix": [
+        [
+          1.2914880841258316,
+          -0.04860666233221822
+        ],
+        [
+          -0.9562702335964905,
+          1.5078715706591723
+        ],
+        [
+          -1116.1062684116225,
+          -453.2381121285434
+        ]
+      ],
+      "gcps": [
+        {
+          "osmId": "462990137",
+          "pixel": [
+            980,
+            519
+          ],
+          "world": [
+            -348.97,
+            281.48
+          ]
+        },
+        {
+          "osmId": "462990141",
+          "pixel": [
+            1030,
+            515
+          ],
+          "world": [
+            -271.61,
+            268.89
+          ]
+        },
+        {
+          "osmId": "640328305",
+          "pixel": [
+            918,
+            521
+          ],
+          "world": [
+            -432.65,
+            291.9
+          ]
+        },
+        {
+          "osmId": "462990138",
+          "pixel": [
+            1040,
+            476
+          ],
+          "world": [
+            -237.24,
+            221.42
+          ]
+        },
+        {
+          "osmId": "462990142",
+          "pixel": [
+            976,
+            477
+          ],
+          "world": [
+            -303.27,
+            211.55
+          ]
+        }
+      ],
+      "fitRmsMetres": 8.507083188661307,
+      "leaveOneOutMaxMetres": 31.471811567335067,
+      "sourceUrl": "https://map.ngii.go.kr/ms/map/Aerial.do"
+    }
+  ]
+}

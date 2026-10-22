@@ -1,10 +1,13 @@
 import registration from './data/aerial-registration.json'
+import additional from './data/additional-registration.json'
 import type {Point} from './spatial'
 
-type Epoch=1985|2001
+export type Epoch=1985|1997|2001|2006|2016
 type Matrix=number[][]
 const affine=([u,v]:Point,m:Matrix):Point=>[u*m[0][0]+v*m[1][0]+m[2][0],u*m[0][1]+v*m[1][1]+m[2][1]]
 export function imageToWorld(p:Point,year:Epoch):Point{
+  const record=additional.records.find(r=>r.year===year)
+  if(record)return affine(p,record.matrix)
   return affine(year===1985?affine(p,registration['1985'].matrix):p,registration['2001'].matrix)
 }
 export interface PhotoFeature {
@@ -14,6 +17,17 @@ export interface PhotoFeature {
 // Hand-traced visible roof / ground edges, not copied present-day footprints.
 // A shallow 3m extrusion communicates observed mass; actual heights are unknown.
 export const photoFeatures:PhotoFeature[]=[
+  {id:'97-field',year:1997,kind:'field',name:'본관 앞 운동장 · 1997 관측',pixels:[[228,659],[321,657],[324,710],[229,711]],identity:'촬영일 존재 확인. 폭·고도는 정사보정되지 않은 전사.',height:null,displayHeight:0,source:'aerial'},
+  {id:'97-road',year:1997,kind:'road',name:'남가좌동 진입로 · 1997',pixels:[[451,628],[388,685],[330,730]],identity:'중심선만 판독, 폭·당시 지반고 미확인',height:null,displayHeight:0,source:'aerial'},
+  {id:'97-house-a',year:1997,kind:'roof',name:'서측 주택 지붕 A',pixels:[[173,659],[185,654],[193,666],[180,672]],identity:'학교 외 서측 주택 관측; 개별 주소·철거일 미확인',height:null,displayHeight:3,source:'aerial'},
+  {id:'97-house-b',year:1997,kind:'roof',name:'서측 주택 지붕 B',pixels:[[154,645],[165,641],[170,651],[159,656]],identity:'촬영 월만 표시. 건물 신원 미동정.',height:null,displayHeight:3,source:'aerial'},
+  {id:'06-field',year:2006,kind:'field',name:'본관 앞 운동장 · 2006 관측',pixels:[[247,649],[325,649],[327,716],[244,715]],identity:'1997·2001·2006 운동장 연속 관측. 월별 상태는 추정.',height:null,displayHeight:0,source:'aerial'},
+  {id:'06-library-site',year:2006,kind:'field',name:'동측 주차 공간 · 2006',pixels:[[412,528],[448,527],[451,603],[413,604]],identity:'현재 도서관 권역과 비교 가능. 정확한 전환일 미확인.',height:null,displayHeight:0,source:'aerial'},
+  {id:'06-road',year:2006,kind:'road',name:'남가좌동 진입로 · 2006',pixels:[[457,626],[384,700],[330,741]],identity:'사진 판독 중심선; 도로 폭은 미확인',height:null,displayHeight:0,source:'aerial'},
+  {id:'06-house-a',year:2006,kind:'roof',name:'서측 주택 지붕 · 2006',pixels:[[207,643],[220,640],[225,654],[211,659]],identity:'주소·철거일 미확인. 다른 촬영의 지붕과 동일 건물로 확정하지 않음.',height:null,displayHeight:3,source:'aerial'},
+  {id:'16-field',year:2016,kind:'field',name:'본관 앞 운동장 · 2016 관측',pixels:[[939,536],[986,534],[989,573],[938,577]],identity:'2016.10.11 존재 확인. MCC 공사 시작일은 이 사진으로 확정 불가.',height:null,displayHeight:0,source:'aerial'},
+  {id:'16-cleared-ground',year:2016,kind:'field',name:'캠퍼스 서측 나지 · 2016 관측',pixels:[[821,486],[873,484],[914,561],[938,602],[892,657],[823,658]],identity:'영상에서 확인한 나지 일부. 정비사업 경계·철거일 미동정. 프레임 서측은 잘림.',height:null,displayHeight:0,source:'aerial'},
+  {id:'16-road',year:2016,kind:'road',name:'남가좌동 진입로 · 2016',pixels:[[1080,535],[1020,581],[945,631]],identity:'사진 판독 중심선, 폭 미확인',height:null,displayHeight:0,source:'aerial'},
   {id:'85-east-roof',year:1985,kind:'roof',name:'홍은동 동측 지붕',pixels:[[621,682],[635,671],[699,745],[686,757]],identity:'고교 권역; 당시 동별 명칭 미확정',height:null,displayHeight:3,source:'aerial'},
   {id:'85-west-roof',year:1985,kind:'roof',name:'홍은동 서측 지붕',pixels:[[396,680],[494,666],[498,699],[401,713]],identity:'당시 사용기관·현존 건물과의 동일성 미확인',height:null,displayHeight:3,source:'aerial'},
   {id:'85-field',year:1985,kind:'field',name:'홍은동 비건축 운동장',pixels:[[445,738],[501,722],[553,777],[503,812]],identity:'사진 판독; 기관별 점유 경계 미확인',height:null,displayHeight:0,source:'aerial'},

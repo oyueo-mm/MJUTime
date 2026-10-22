@@ -16,6 +16,7 @@ export class TimeScene{
   private phaseEdges=new THREE.LineSegments(new THREE.EdgesGeometry(this.phaseMesh.geometry),new THREE.LineBasicMaterial({color:'#ad7836'}))
   private lastTime=0
   private suppressBuildings=false
+  private value=0
   constructor(){
     const area=mapData.areas.find(a=>a.id==='1126398129')!
     this.hongBoundary=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(area.p.map(([x,z])=>new THREE.Vector3(x,heightAt(x,z)+2,z))),new THREE.LineBasicMaterial({color:'#bb7f43'}))
@@ -40,6 +41,7 @@ export class TimeScene{
     this.group.add(pivot);this.housing.set(id,{pivot,mesh,edges,target:0})
   }
   update(value:number,suppressBuildings=false){
+    this.value=value
     this.suppressBuildings=suppressBuildings
     for(const [id,b] of this.buildings)b.target=buildingKnown(id,value)?1:0
     this.housingStage=projectStage('hongeun2',value)
@@ -71,5 +73,5 @@ export class TimeScene{
       b.pivot.visible=!this.suppressBuildings&&(b.target===1||b.pivot.scale.y>.005)
     }
   }
-  debug(){return{knownBuildings:[...this.buildings].filter(([,b])=>b.target===1).map(([id])=>id),projectStage:this.stage,housingStage:this.housingStage,housingCount:this.housing.size,buildingScales:Object.fromEntries([...this.buildings].map(([id,b])=>[id,b.pivot.scale.y]))}}
+  debug(){return{knownBuildings:trackedBuildings.filter(b=>buildingKnown(b.id,this.value)).map(b=>b.id),projectStage:this.stage,housingStage:this.housingStage,housingCount:this.housing.size,buildingScales:Object.fromEntries([...this.buildings].map(([id,b])=>[id,b.pivot.scale.y]))}}
 }

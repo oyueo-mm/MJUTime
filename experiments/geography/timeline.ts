@@ -1,6 +1,7 @@
 import {sources,type SourceId} from './history'
 import {mapData,type Point} from './spatial'
 import additionalAerial from './data/additional-aerial.json'
+import additionalRegistration from './data/additional-registration.json'
 import {campusRegister,legacyCampus,registered,physicallyKnown,registerSource} from './campus-evidence'
 
 export const monthIndex=(year:number,month=1)=>year*12+month-1
@@ -23,6 +24,7 @@ export const projectSources={
   hongeun2:'https://cleanup.seoul.go.kr/cafe/mainIndx/cleanup-prtnelapse/vscr.do?bsnsPk=11410-100010002&cafeId=410100010002o22',
 }
 export const events:TimeEvent[]=[
+  ...additionalRegistration.records.map(r=>({id:`aerial-capture-${r.year}`,date:date(r.year,r.month,r.day),dateKind:'capture' as const,title:`${r.year} 항공사진 촬영 · 여백 날짜 판독`,category:'observation' as const,sourceUrl:r.sourceUrl,note:`objectId ${r.objectId}, ${r.zone}, ${r.course}/${r.number}. 원본 미리보기 여백 촬영일 확인. 수동 지붕 중심 정합 RMS ${r.fitRmsMetres.toFixed(1)}m, 교차검증 최대 ${r.leaveOneOutMaxMetres.toFixed(1)}m. 정사보정·독립 측량 정확도가 아닙니다.`})),
   ...campusRegister.map(b=>({id:`register-${b.id}`,date:date(b.completed[0],b.completed[1],b.completed[2]),title:`${b.name} · 대장 준공`,category:'completion' as const,buildingId:b.id,position:mapData.buildings.find(d=>d.id===b.id)!.center as Point,sourceUrl:registerSource,note:`2023.02.15 기준 대학 시설 현황(건축물대장 기준). 지하 ${b.below}층·지상 ${b.above}층. 개관·기관 이전일과 별도입니다. 당시 증축·외관은 미확인, 현 OSM 윤곽·층고 추정 모델입니다.`})),
   {id:'elementary-1976',date:date(1976,2,28),title:'국민학교 남가좌동 이전',category:'relocation',sourceUrl:url('elementary'),position:[-326.8,294.5],note:'남가좌동 50-3 이전. 주소 권역 대표점이며 교사 윤곽 미확인.'},
   {id:'international',date:{year:1984,precision:'period'},title:'국제대학 · 학생회관 사용 시기',category:'occupancy',sourceUrl:url('newspaper'),position:[-271.61,268.89],buildingId:'462990141',note:'1984년 이후 시기 서술, 시작 월·종료일 미확인. 현재 학생회관 위치 참조 점선이며 당시 윤곽 복원이 아닙니다.'},
