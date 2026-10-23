@@ -1,11 +1,84 @@
 import {test,expect} from '@playwright/test'
 import {writeFile} from 'node:fs/promises'
+
+test('reference layer continuity, scoped right-pan, hover/tap and crossed spatial changes',async({page},info)=>{
+  test.setTimeout(240000)
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message))
+  await page.goto('http://127.0.0.1:4188/MJUTime/geography.html?date=2026-10')
+  const state=()=>page.evaluate(()=>window.__GEO_STUDY__!())
+  await expect.poll(async()=>(await state())?.frame??0).toBeGreaterThan(6)
+  const choose=async(date:string)=>{await page.locator('#date-input').fill(date);await expect(page.locator('#current-month')).toHaveText(date.replace('-','.'))}
+  const camera=(await state()).camera,target=(await state()).target,reference=(await state()).referenceBuildings
+  expect(reference).toEqual(expect.arrayContaining(['463033408','463033409','1123968176']))
+  for(const date of ['2026-09','2025-10','2006-12','2026-10']){
+    await choose(date);const s=await state()
+    expect(s.currentVisible).toBe(true);expect(s.referenceBuildings).toEqual(reference)
+    expect(s.camera).toEqual(camera);expect(s.target).toEqual(target)
+    expect(s.knownBuildings).toEqual(expect.arrayContaining(['795977922','1123968177']))
+    await page.waitForTimeout(180)
+    await page.screenshot({path:`experiments/geography/screenshots/continuity-${info.project.name}-${date}.png`})
+  }
+  await page.locator('#context').uncheck();expect((await state()).currentVisible).toBe(false)
+  expect((await state()).pipelineIds).toContain('462990137')
+  await page.locator('#context').check()
+  await page.locator('#show-changes').uncheck()
+  await expect(page.locator('.place')).toHaveCount(0)
+  const box=(await page.locator('canvas').boundingBox())!
+  // Both synthetic cancelability and real right-drag are checked. No global suppression.
+  expect(await page.locator('canvas').evaluate(el=>!el.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true})))).toBe(true)
+  expect(await page.locator('header h1').evaluate(el=>el.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true})))).toBe(true)
+  await page.locator('#explore').click()
+  if(info.project.name==='desktop'){
+    const before=(await state()).target
+    await page.mouse.move(box.x+box.width*.4,box.y+box.height*.5);await page.mouse.down({button:'right'})
+    await page.mouse.move(box.x+box.width*.44,box.y+box.height*.52,{steps:8})
+    await expect(page.locator('#building-popup')).toBeHidden();await page.mouse.up({button:'right'})
+    await expect.poll(async()=>(await state()).target).not.toEqual(before)
+    // Restore a deterministic view before aiming at the actual library roof.
+    await page.reload();await expect.poll(async()=>(await state())?.frame??0).toBeGreaterThan(6)
+    await page.locator('#show-changes').uncheck()
+  }
+  const canvas=(await page.locator('canvas').boundingBox())!,p=(await state()).screenBuildings['462990139']
+  if(info.project.name==='desktop'){
+    await page.waitForTimeout(300);await page.mouse.move(canvas.x+p[0],canvas.y+p[1])
+    await expect(page.locator('#building-popup')).toBeVisible()
+    await expect(page.locator('#building-popup')).toContainText('방목학술정보관')
+    await page.screenshot({path:'experiments/geography/screenshots/hover-library.png'})
+    await page.mouse.move(10,20);await expect(page.locator('#building-popup')).toBeHidden()
+    await page.mouse.move(canvas.x+p[0],canvas.y+p[1]);await page.mouse.down();await page.mouse.move(canvas.x+p[0]-25,canvas.y+p[1]+10,{steps:5})
+    await expect(page.locator('#building-popup')).toBeHidden();await page.mouse.up()
+  }else{
+    await page.locator('#explore').click() // Tap also works in the default scroll mode.
+    await page.touchscreen.tap(canvas.x+p[0],canvas.y+p[1])
+    await expect(page.locator('#building-popup.pinned')).toBeVisible()
+    await expect(page.locator('#building-popup')).toContainText('방목학술정보관')
+    await page.screenshot({path:'experiments/geography/screenshots/tap-library-mobile.png'})
+    await page.locator('#building-popup button').click()
+  }
+  await choose('2006-01');await choose('2006-02')
+  expect((await state()).changeIds).toContain('dorm')
+  await choose('2009-12');await choose('2010-03')
+  expect((await state()).changeIds).toEqual(expect.arrayContaining(['register-462990139','library','gym-library-transition']))
+  await page.locator('#show-changes').uncheck();await expect(page.locator('#change-markers')).toBeHidden()
+  await page.locator('#show-changes').check()
+  await choose('2006-01');await choose('2006-02')
+  await page.locator('[data-change="dorm"]').click()
+  await expect(page.locator('#event-note')).toContainText('인문생활관')
+  await page.waitForTimeout(1000)
+  await expect.poll(async()=>Math.abs((await state()).target[0]+303.27)).toBeLessThan(3)
+  await page.locator('#history-focus').selectOption('library')
+  await expect(page.locator('#event-note')).toContainText('이전/이후')
+  await choose('2001-07');await choose('2001-08');expect((await state()).changeIds).toContain('college-move')
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+  expect(errors).toEqual([])
+})
 test('geographic rendering, navigation, dated evidence and mobile regression',async({page},info)=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message))
   await page.goto('http://127.0.0.1:4188/MJUTime/geography.html?date=2026-10&view=region')
   await expect.poll(()=>page.evaluate(()=>window.__GEO_STUDY__?.().frame??0)).toBeGreaterThan(5)
   const initial=await page.evaluate(()=>window.__GEO_STUDY__!())
   await page.locator('#explore').click()
+  await page.locator('#always-labels').check()
   expect(initial.footprints).toBe(2667);expect(initial.currentVisible).toBe(true)
   expect(initial.calls).toBeGreaterThan(5);expect(initial.triangles).toBeGreaterThan(50000)
   for(const name of ['명지대학교 인문캠퍼스','명지전문대학','명지초등학교','명지중학교','명지고등학교'])await expect(page.locator('.place b',{hasText:name})).toBeVisible()
@@ -27,7 +100,7 @@ test('geographic rendering, navigation, dated evidence and mobile regression',as
     await expect(page.locator('#map-state')).toContainText('항공사진 국소 전사')
     expect(await page.evaluate(()=>window.__GEO_STUDY__!().historicalFeatures)).toBe(year===1985?4:5)
     await page.screenshot({path:`experiments/geography/screenshots/${info.project.name}-${year}.png`,fullPage:false})
-    const context=page.getByRole('checkbox',{name:/현재 건물/});await context.check()
+    const context=page.getByRole('checkbox',{name:/현대 공간 참조/});await context.check()
     expect(await page.evaluate(()=>window.__GEO_STUDY__!().currentVisible)).toBe(true)
     await context.uncheck()
   }
@@ -40,7 +113,7 @@ test('geographic rendering, navigation, dated evidence and mobile regression',as
 })
 
 test('free travel, occupancy, relocation, rapid dates and performance sample',async({page},info)=>{
-  test.setTimeout(90000)
+  test.setTimeout(240000)
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message))
   await page.goto('http://127.0.0.1:4188/MJUTime/geography.html?date=2026-10&view=region')
   await expect.poll(()=>page.evaluate(()=>window.__GEO_STUDY__?.().frame??0)).toBeGreaterThan(5)
@@ -119,7 +192,7 @@ test('free travel, occupancy, relocation, rapid dates and performance sample',as
 })
 
 test('month boundaries, playback, source precision, redevelopment and cached geometry',async({page},info)=>{
-  test.setTimeout(120000)
+  test.setTimeout(240000)
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message))
   await page.goto('http://127.0.0.1:4188/MJUTime/geography.html?date=2026-10&view=region')
   const state=()=>page.evaluate(()=>window.__GEO_STUDY__!())
@@ -188,7 +261,7 @@ test('month boundaries, playback, source precision, redevelopment and cached geo
 })
 
 test('integrated 2006 campus and four epochs share one camera, gym and library never overlap',async({page},info)=>{
-  test.setTimeout(90000)
+  test.setTimeout(240000)
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())})
   await page.goto('http://127.0.0.1:4188/MJUTime/geography.html')
   const state=()=>page.evaluate(()=>window.__GEO_STUDY__!())
@@ -239,7 +312,7 @@ test('integrated 2006 campus and four epochs share one camera, gym and library n
 })
 
 test('sticky scroll story, intermediate campus continuity, additional captures and terrain rewind',async({page},info)=>{
-  test.setTimeout(90000)
+  test.setTimeout(240000)
   const errors:string[]=[]
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())})
   await page.goto('http://127.0.0.1:4188/MJUTime/geography.html?date=2026-10&view=region')

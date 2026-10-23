@@ -14,6 +14,8 @@ import {IntegratedCampus} from './campus-architecture'
 import {CampusSurfaces} from './campus-surfaces'
 import {integratedIds,restorationEpochs} from './integrated-evidence'
 import {makeOldGym,gymScenarioAt,gymEvidence} from './old-gym'
+import {BuildingInteraction,ChangeMarkers} from './map-overlays'
+import {changesBetween,recordKind} from './spatial-changes'
 import './style.css'
 
 document.querySelector('#map')!.innerHTML=`<header><div><small>MJUTime / GEOGRAPHIC STUDY · 실험 브랜치</small><h1>남가좌동에서 홍은동까지</h1><p>건물의 모양보다, 먼저 실제 공간.</p></div><span class="badge">공개 사이트와 분리된 시제품</span></header><main><div id="viewport" aria-label="남가좌동·홍은동 실제 좌표 3D 지도"><div id="labels"></div><div class="map-tools"><button id="home">사선 보기</button><button id="top">위에서 보기 · 북쪽 ↑</button></div><div class="map-caption"><b id="map-state"></b><span>드래그 회전 · 휠 확대 · 우클릭 이동</span></div></div><aside><small>세 시점의 비교</small><nav aria-label="비교 연도">${[1985,2001,2026].map(y=>`<button data-year="${y}" aria-pressed="${y===2026}">${y}</button>`).join('')}</nav><h2 id="year-title"></h2><div id="notes"></div><label id="context-option" hidden><input id="context" type="checkbox"/> 현재 건물·도로 겹쳐 비교 <em>과거 복원 아님</em></label><div class="source-list" id="sources"></div><div class="limits"><b>확인할 수 있는 것과 없는 것</b><p>윤곽은 OSM 관측값, 지형은 저해상도 DEM입니다. 건물 높이·옹벽·절토면·과거 골목은 정확히 복원하지 않았습니다.</p><p>1985·2001 항공영상의 위치·촬영시점 검증이 완료되지 않아 과거 건물은 표식만 제공합니다.</p></div></aside></main><footer><div class="key"><i style="--key:#3975cc"></i>명지대 <i style="--key:#199282"></i>전문대 <i style="--key:#d59539"></i>초등학교 <i style="--key:#8b69bb"></i>중학교 <i style="--key:#c96879"></i>고등학교</div><p>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors · ODbL</a> · 고도: <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">Mapzen Terrain Tiles / USGS SRTM·GMTED</a><br/>고도 배율 1× · 실제 좌표, 높이 일부 추정 · 학교 경계는 현행 OSM 참조</p></footer>`
@@ -34,6 +36,7 @@ scene.add(new THREE.AmbientLight('#edf4ff',1.8))
 const sun=new THREE.DirectionalLight('#fff5e4',2.5);sun.position.set(-700,1700,700);scene.add(sun)
 const desktopQuality=!matchMedia('(pointer: coarse)').matches
 renderer.shadowMap.enabled=desktopQuality;renderer.shadowMap.type=THREE.PCFSoftShadowMap
+renderer.shadowMap.autoUpdate=false
 sun.castShadow=desktopQuality;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-400;sun.shadow.camera.right=400;sun.shadow.camera.top=350;sun.shadow.camera.bottom=-350;sun.shadow.camera.far=2600;sun.shadow.normalBias=.6
 sun.target.position.set(-300,40,280);scene.add(sun.target)
 const camera=new THREE.PerspectiveCamera(38,1,2,15000)
@@ -106,6 +109,7 @@ for(const road of data.roads){
 const roads=new THREE.BufferGeometry();roads.setAttribute('position',new THREE.Float32BufferAttribute(roadPositions,3));roads.setAttribute('color',new THREE.Float32BufferAttribute(roadColors,3));roads.computeVertexNormals()
 currentGroup.add(new THREE.Mesh(roads,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide})))
 const categories=new Map<string,THREE.BufferGeometry[]>()
+const pickBuckets=new Map<string,{id:string;end:number}[]>()
 const housingArea=data.areas.find(a=>a.id==='1126398129')!
 let footprintCount=0
 for(const b of data.buildings){
@@ -125,8 +129,11 @@ for(const b of data.buildings){
   for(let i=0;i<positions.count;i++){const x=positions.getX(i),z=positions.getZ(i);positions.setY(i,positions.getY(i)<.01?heightAt(x,z)-.2:foundation+height)}
   g.computeVertexNormals()
   if(trackedBuildings.some(d=>d.id===b.id)){timeScene.adopt(b.id,g.clone(),b.center as Point,foundation);g.dispose();footprintCount++;continue}
-  if(inRing(b.center,housingArea.p))timeScene.adoptHousing(b.id,g.clone(),b.center as Point,foundation)
+  if(inRing(b.center,housingArea.p)){timeScene.adoptHousing(b.id,g.clone(),b.center as Point,foundation);g.dispose();footprintCount++;continue}
   if(!categories.has(key))categories.set(key,[])
+  if(!pickBuckets.has(key))pickBuckets.set(key,[])
+  const bucket=pickBuckets.get(key)!
+  bucket.push({id:b.id,end:(bucket.at(-1)?.end??0)+g.getAttribute('position').count/3})
   categories.get(key)!.push(g);footprintCount++
 }
 for(const [key,geometries] of categories){
@@ -134,7 +141,7 @@ for(const [key,geometries] of categories){
   geometries.forEach(g=>g.dispose())
   if(!merged)continue
   const material=new THREE.MeshStandardMaterial({color:palette[key],roughness:.9,flatShading:true,transparent:true});material.userData.currentColor=material.color.clone()
-  currentGroup.add(new THREE.Mesh(merged,material))
+  const mesh=new THREE.Mesh(merged,material);mesh.userData.pickRanges=pickBuckets.get(key);currentGroup.add(mesh)
   if(key!=='background')currentGroup.add(new THREE.LineSegments(new THREE.EdgesGeometry(merged,35),new THREE.LineBasicMaterial({color:'#f8fbfc',transparent:true,opacity:.3})))
 }
 for(const site of data.sites)currentGroup.add(drapedLine([...site.p,site.p[0]],palette[site.id],2))
@@ -150,6 +157,19 @@ terrainGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setAttribute(
 const requestedDate=/^(\d{4})-(\d{2})$/.exec(new URLSearchParams(location.search).get('date')??'2006-12')!
 let timeIndex=clampMonth(monthIndex(Number(requestedDate?.[1]??2006),Number(requestedDate?.[2]??12))),year:Year=referenceEpoch(timeIndex),context=true,frame=0,playing=false,speed=6,carry=0,lastFrame=0,pendingUpdate=false,photoReference=false
 let story:StoryScroll|undefined
+let activeUntil=performance.now()+1500,geometryUntil=activeUntil,renderedAt=0
+const cameraActive=()=>{activeUntil=performance.now()+700}
+controls.addEventListener('change',cameraActive)
+let alwaysLabels=false
+mccScene.group.userData.buildingId='1127358152'
+for(const [id,b] of timeScene.buildings)b.pivot.userData.buildingId=id
+for(const [id,b] of timeScene.housing)b.pivot.userData.buildingId=id
+const buildingInteraction=new BuildingInteraction(renderer.domElement,host,camera,[currentGroup,timeScene.group,integratedCampus.group,mccScene.group],controls)
+const changeMarkers=new ChangeMarkers(host,camera,e=>{historyFocus.value=e.id;showEvent(true)})
+document.querySelector('#context-option')!.innerHTML='<input id="context" type="checkbox" checked/> 현대 공간 참조 <em>2026 OSM 건물·도로 · 과거 존치 주장 아님</em>'
+document.querySelector('#context-option')!.insertAdjacentHTML('afterend','<label class="reference-option"><input id="always-labels" type="checkbox"/> 건물 이름표 항상 표시</label><label class="reference-option"><input id="show-changes" type="checkbox" checked/> 시간 구간의 변화 ! 표시</label>')
+document.querySelector<HTMLInputElement>('#always-labels')!.onchange=e=>{alwaysLabels=(e.target as HTMLInputElement).checked;pendingUpdate=true}
+document.querySelector<HTMLInputElement>('#show-changes')!.onchange=e=>{changeMarkers.enabled=(e.target as HTMLInputElement).checked}
 document.querySelector('aside>small')!.textContent='연속 시간 탐험 · 자료는 이산 관측'
 document.querySelector('aside nav')!.setAttribute('aria-label','관측 바로가기')
 document.querySelector('aside nav')!.insertAdjacentHTML('beforebegin',`<section id="campus-epochs"><small>같은 카메라로 캠퍼스 비교</small><div>${restorationEpochs.map(y=>`<button data-campus-year="${y}" aria-label="${y}년 캠퍼스 비교">${y}</button>`).join('')}</div><p>실선 건물: 존재 근거 + 추정 입면<br/>연한 회색 배경: 2026 OSM 참조 · 과거 존재 미확인</p></section>`)
@@ -227,8 +247,11 @@ function showEvent(travel=false){
   clearGroup(eventGroup)
   const selected=events.find(e=>e.id===historyFocus.value)
   eventNote.replaceChildren()
-  if(selected){eventNote.append(`${dateLabel(selected.date)} · ${selected.note} `);const source=document.createElement('a');source.textContent='출처 ↗';source.href=selected.sourceUrl;source.target='_blank';source.rel='noopener';eventNote.append(source)}
+  if(selected){const title=document.createElement('b');title.textContent=selected.title;eventNote.append(title,document.createElement('br'),`${dateLabel(selected.date)} · ${selected.note} `);const source=document.createElement('a');source.textContent='출처 ↗';source.href=selected.sourceUrl;source.target='_blank';source.rel='noopener';eventNote.append(source)}
   if(!selected)return
+  const kind=document.createElement('p');kind.textContent=`${recordKind(selected)} · ${selected.date.month?'날짜 근거 있음 (월말 요약)':'시기 불확실 · 월 배정 없음'} · 이전/이후: ${selected.from?'기관 위치 이동. 옛 건물 철거 여부 미확인':selected.category==='completion'||selected.category==='opening'?'기록 전 존재/형상 미확인 → 준공·개관 기록 이후 존재 참조':selected.category==='occupancy'?'사용기관 변화. 물리 건물 신축·철거와 별도':'앞선 단계 → 이 기록 단계. 개별 건물 형상·실제 작업일 미확인'}`;eventNote.append(kind)
+  const nearby=changeMarkers.ids.filter(id=>id!==selected.id).map(id=>events.find(e=>e.id===id)!).filter(e=>e.position&&selected.position&&Math.hypot(e.position[0]-selected.position[0],e.position[1]-selected.position[1])<38)
+  for(const related of nearby){const button=document.createElement('button');button.textContent=`같은 위치: ${related.title}`;button.onclick=()=>{historyFocus.value=related.id;showEvent(true)};eventNote.append(button)}
   if(selected.position&&travel)navigation.travel(selected.position,620)
   if(selected.buildingId){
     const b=data.buildings.find(b=>b.id===selected.buildingId)!
@@ -258,9 +281,15 @@ let labelKey='',lastUpdatedMonth=-1
 function update(){
   year=referenceEpoch(timeIndex)
   const current=isCurrent(timeIndex),monthEvents=eventsInMonth(timeIndex).filter(e=>!(e.dateKind==='catalog'&&events.some(other=>other.dateKind==='capture'&&other.date.year===e.date.year))),known=trackedBuildings.filter(b=>buildingKnown(b.id,timeIndex))
+  // Observation month is evidence metadata, never a visibility gate for city context.
+  // Recent campus configuration controls annotation density only, not presence.
+  const contemporary=buildingKnown('1127358152',timeIndex)
   const notes=yearNotes[year]
-  renderHistorical();timeScene.update(timeIndex,false,current);mccScene.update(timeIndex);integratedCampus.update(timeIndex);campusSurfaces.update(timeIndex);oldGym.visible=gymScenarioAt(timeIndex)
+  renderHistorical();timeScene.update(timeIndex,false,false);mccScene.update(timeIndex);integratedCampus.update(timeIndex);campusSurfaces.update(timeIndex);oldGym.visible=gymScenarioAt(timeIndex)
   if(timeIndex!==lastUpdatedMonth){
+    activeUntil=geometryUntil=performance.now()+1400
+    buildingInteraction.close()
+    changeMarkers.set(lastUpdatedMonth<0?monthEvents.filter(e=>e.position&&e.category!=='observation'):changesBetween(lastUpdatedMonth,timeIndex))
     historyFocus.innerHTML='<option value="">공간 사용·이전·재개발 기록</option>'+events.map(e=>`<option value="${e.id}">${dateLabel(e.date)} ${e.title}</option>`).join('')
     historyFocus.value=monthEvents[0]?.id??'';showEvent();lastUpdatedMonth=timeIndex
   }
@@ -277,19 +306,20 @@ function update(){
   document.querySelectorAll<HTMLButtonElement>('[data-event]').forEach(b=>b.onclick=()=>{historyFocus.value=b.dataset.event!;showEvent(true)})
   document.querySelector('#sources')!.innerHTML='<b>관련 자료와 기존 조사 출처</b>'+monthEvents.map(e=>`<a href="${e.sourceUrl}" target="_blank" rel="noopener">${e.title} · 원자료 ↗</a>`).join('')+notes.sourceIds.map(id=>`<a href="${sources[id].url}" target="_blank" rel="noopener">${sources[id].title} ↗</a>`).join('')
   document.querySelectorAll<HTMLButtonElement>('[data-year]').forEach(b=>{const y=Number(b.dataset.year);b.setAttribute('aria-pressed',String(timeIndex===monthIndex(y,y===1985?10:y===2001?9:10)))})
-  document.querySelector<HTMLElement>('#context-option')!.hidden=current
+  document.querySelector<HTMLElement>('#context-option')!.hidden=false
   document.querySelector('#map-state')!.textContent=`${monthLabel(timeIndex)} · ${resolution}${context&&!current?' · 연한 배경=2026 참조(과거 존재 미확인)':''}`
-  currentGroup.visible=current||context
+  currentGroup.visible=context
   currentGroup.traverse(o=>{
-    if(o instanceof THREE.Mesh){const m=o.material as THREE.MeshStandardMaterial;m.transparent=false;m.opacity=1;m.depthWrite=true;if(m.userData.currentColor)m.color.copy(current?m.userData.currentColor:new THREE.Color('#e1e4df'))}
+    if(o instanceof THREE.Mesh){const m=o.material as THREE.MeshStandardMaterial;m.transparent=false;m.opacity=1;m.depthWrite=true;if(m.userData.currentColor)m.color.copy(contemporary?m.userData.currentColor:new THREE.Color('#e1e4df'))}
     else if(o instanceof THREE.Line){const m=o.material as THREE.Material;m.transparent=true;m.opacity=current?.3:.12;m.depthWrite=false}
   })
-  const nextLabelKey=[current,oldGym.visible,photoMonth(timeIndex),shownPhoto,...known.map(b=>b.id),...monthEvents.map(e=>e.id),projectStage('namgajwa1',timeIndex),projectStage('hongeun2',timeIndex)].join(':')
+  const nextLabelKey=[contemporary,alwaysLabels,oldGym.visible,photoMonth(timeIndex),shownPhoto,...known.map(b=>b.id),...monthEvents.map(e=>e.id),projectStage('namgajwa1',timeIndex),projectStage('hongeun2',timeIndex)].join(':')
   if(nextLabelKey===labelKey)return
   labelKey=nextLabelKey
   labels.splice(0);labelHost.replaceChildren();leaders.replaceChildren()
   markerGroup.children.slice().forEach(o=>{markerGroup.remove(o);if(o instanceof THREE.Mesh){o.geometry.dispose();(o.material as THREE.Material).dispose()}})
-  if(current){for(const site of data.sites)addLabel(site.name,'현행 OSM · 높이 일부 추정',site.center as Point,palette[site.id],`https://www.openstreetmap.org/way/${site.osmId}`)}
+  if(contemporary&&!alwaysLabels)return
+  if(contemporary){for(const site of data.sites)addLabel(site.name,'현행 OSM · 높이 일부 추정',site.center as Point,palette[site.id],`https://www.openstreetmap.org/way/${site.osmId}`)}
   else {
     for(const b of known){const e=events.find(e=>e.id===b.eventId)!;if(e.position)addLabel(registered(b.id)?.name??e.title,'존재 근거 있음 · 과거 외형은 현 윤곽 추정',e.position,b.color,e.sourceUrl)}
     if(photoMonth(timeIndex))for(const marker of historicalMarkers[photoMonth(timeIndex)!])addLabel(marker.label,marker.note,project(marker.lon,marker.lat),'#ad7430',sources[marker.source].url)
@@ -310,11 +340,16 @@ const resize=()=>{const w=host.clientWidth,h=host.clientHeight;renderer.setSize(
 const observer=new ResizeObserver(resize);observer.observe(host);resize()
 const point=new THREE.Vector3()
 renderer.setAnimationLoop((time)=>{
+  // Do not fill the software/mobile GPU queue with identical idle frames.
+  // Camera and model transitions run at up to 30 fps; a settled map at 12 fps.
+  if(document.hidden||time-renderedAt<1000/(playing||pendingUpdate||time<activeUntil?30:12))return
+  renderedAt=time
   const elapsed=lastFrame?(time-lastFrame)/1000:0;lastFrame=time
   if(playing){const next=advancePlayback(timeIndex,carry,elapsed,speed);carry=next.carry;if(next.value!==timeIndex){timeIndex=next.value;pendingUpdate=true;story?.sync(timeIndex)}if(next.ended)setPlaying(false)}
   if(pendingUpdate){update();pendingUpdate=false}
-  timeScene.tick(time);mccScene.tick(time);integratedCampus.tick(time);navigation.tick();renderer.render(scene,camera);frame++
-  const occupied:{x:number;y:number;w:number;h:number}[]=[]
+  timeScene.tick(time);mccScene.tick(time);integratedCampus.tick(time);navigation.tick();renderer.shadowMap.needsUpdate=time<geometryUntil;renderer.render(scene,camera);buildingInteraction.tick(time);changeMarkers.tick();frame++
+  // Reserve the projected change billboards before placing historical text.
+  const occupied:{x:number;y:number;w:number;h:number}[]=[...changeMarkers.boxes]
   const tools=document.querySelector<HTMLElement>('.map-tools')!,topInset=Math.max(85,tools.offsetTop+tools.offsetHeight+12)
   for(const label of labels){
     point.copy(label.position).project(camera)
@@ -333,7 +368,7 @@ renderer.setAnimationLoop((time)=>{
     occupied.push({x:bx,y:by-h/2,w,h})
   }
 })
-function studyState(){return{...splitMonth(timeIndex),timeIndex,playing,speed,exploring,mcc:mccScene.debug,...integratedCampus.debug(),...campusSurfaces.debug(),gymVisible:oldGym.visible,gymGeometry:oldGym.userData.footprint as Point[],gymPhotoDates:gymEvidence.photoDates,historicalBuilds,geometries:renderer.info.memory.geometries,cameraSettings:{...navigation.settings},...timeScene.debug(),buildingScales:{...timeScene.debug().buildingScales,...integratedCampus.debug().pipelineScales},frame,footprints:footprintCount,historicalFeatures:shownPhoto?photoCache.get(shownPhoto)!.children.filter(c=>c.visible).length:0,eventObjects:eventGroup.children.length,currentVisible:currentGroup.visible,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,camera:camera.position.toArray(),target:controls.target.toArray(),terrainRange:[Math.min(...t.heights),Math.max(...t.heights)],labels:labels.map(l=>l.element.textContent??'')}}
+function studyState(){return{...splitMonth(timeIndex),timeIndex,playing,speed,exploring,mcc:mccScene.debug,...integratedCampus.debug(),...campusSurfaces.debug(),gymVisible:oldGym.visible,gymGeometry:oldGym.userData.footprint as Point[],gymPhotoDates:gymEvidence.photoDates,historicalBuilds,geometries:renderer.info.memory.geometries,cameraSettings:{...navigation.settings},...timeScene.debug(),buildingScales:{...timeScene.debug().buildingScales,...integratedCampus.debug().pipelineScales},frame,footprints:footprintCount,historicalFeatures:shownPhoto?photoCache.get(shownPhoto)!.children.filter(c=>c.visible).length:0,eventObjects:eventGroup.children.length,hoverBuilding:buildingInteraction.activeId,changeIds:changeMarkers.ids,referenceBuildings:[...pickBuckets.values()].flat().map(b=>b.id),screenBuildings:Object.fromEntries([...integratedCampus.models].map(([id,m])=>{const p=new THREE.Vector3(m.group.position.x,m.group.position.y+m.group.userData.height,m.group.position.z).project(camera);return[id,[(p.x+1)*host.clientWidth/2,(1-p.y)*host.clientHeight/2]]})),currentVisible:currentGroup.visible,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,camera:camera.position.toArray(),target:controls.target.toArray(),terrainRange:[Math.min(...t.heights),Math.max(...t.heights)],labels:labels.map(l=>l.element.textContent??'')}}
 declare global{interface Window{__GEO_STUDY__?:typeof studyState}}
 window.__GEO_STUDY__=studyState
-window.addEventListener('pagehide',()=>{renderer.setAnimationLoop(null);observer.disconnect();story?.dispose();navigation.dispose();scene.traverse(o=>{if(o instanceof THREE.Mesh||o instanceof THREE.Line){o.geometry.dispose();const m=Array.isArray(o.material)?o.material:[o.material];m.forEach(m=>m.dispose())}});renderer.dispose();delete window.__GEO_STUDY__},{once:true})
+window.addEventListener('pagehide',()=>{renderer.setAnimationLoop(null);observer.disconnect();story?.dispose();buildingInteraction.dispose();changeMarkers.dispose();controls.removeEventListener('change',cameraActive);navigation.dispose();scene.traverse(o=>{if(o instanceof THREE.Mesh||o instanceof THREE.Line){o.geometry.dispose();const m=Array.isArray(o.material)?o.material:[o.material];m.forEach(m=>m.dispose())}});sun.shadow.dispose();renderer.dispose();delete window.__GEO_STUDY__},{once:true})

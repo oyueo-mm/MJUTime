@@ -18,8 +18,8 @@
       "gym": true,
       "field": true,
       "calls": 57,
-      "triangles": 143940,
-      "fps": 32.23343682478653
+      "triangles": 142816,
+      "fps": 12.480976261963201
     },
     {
       "year": 2006,
@@ -39,8 +39,8 @@
       "gym": true,
       "field": true,
       "calls": 63,
-      "triangles": 149200,
-      "fps": 30.92736476429875
+      "triangles": 148076,
+      "fps": 17.8241562322941
     },
     {
       "year": 2010,
@@ -60,9 +60,9 @@
       ],
       "gym": false,
       "field": true,
-      "calls": 60,
-      "triangles": 145444,
-      "fps": 30.921526132859483
+      "calls": 63,
+      "triangles": 160184,
+      "fps": 15.545205039866524
     },
     {
       "year": 2026,
@@ -82,9 +82,9 @@
       ],
       "gym": false,
       "field": false,
-      "calls": 51,
-      "triangles": 139620,
-      "fps": 31.74078283735471
+      "calls": 61,
+      "triangles": 157608,
+      "fps": 15.16041429988963
     }
   ]
 }

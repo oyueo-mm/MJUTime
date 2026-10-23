@@ -25,6 +25,8 @@ export class Navigation {
     const on=<K extends keyof WindowEventMap>(target:EventTarget,type:K,handler:(event:WindowEventMap[K])=>void)=>{
       target.addEventListener(type,handler as EventListener);this.disposeListeners.push(()=>target.removeEventListener(type,handler as EventListener))
     }
+    // Only the map owns right-drag. Links and text elsewhere retain native menus.
+    on(canvas,'contextmenu',e=>e.preventDefault())
     on(window,'keydown',e=>{
       if(!host.contains(document.activeElement)||/INPUT|SELECT|TEXTAREA|BUTTON/.test(document.activeElement?.tagName??''))return
       const key=e.key.toLowerCase()

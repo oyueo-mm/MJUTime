@@ -11,9 +11,9 @@ export const MIN_MONTH=monthIndex(1948,1)
 const now=new Date()
 export const MAX_MONTH=monthIndex(now.getFullYear(),now.getMonth()+1)
 export const clampMonth=(value:number)=>Math.max(MIN_MONTH,Math.min(MAX_MONTH,Math.round(value)))
-export interface EvidenceDate {year:number;month?:number;day?:number;precision:'day'|'month'|'year'|'period'}
+export interface EvidenceDate {year:number;month?:number;day?:number;untilYear?:number;precision:'day'|'month'|'year'|'period'}
 export interface TimeEvent {
-  id:string;date:EvidenceDate;title:string;category:'occupancy'|'relocation'|'opening'|'observation'|'demolition-report'|'demolition-complete'|'construction-report'|'completion'|'approval'
+  id:string;date:EvidenceDate;title:string;category:'occupancy'|'relocation'|'opening'|'observation'|'demolition-report'|'demolition-complete'|'construction-report'|'completion'|'approval'|'uncertain-transition'
   sourceUrl:string;note:string;position?:Point;from?:Point;buildingId?:string;projectId?:string;recordedAt?:string;dateKind?:'catalog'|'capture'
 }
 const date=(year:number,month?:number,day?:number):EvidenceDate=>({year,month,day,precision:day?'day':month?'month':'year'})
@@ -34,6 +34,7 @@ export const events:TimeEvent[]=[
   {id:'college-move',date:date(2001,8),title:'전문대 이전 · 본관·공학관 준공',category:'relocation',sourceUrl:url('college'),position:[-150.13,-210.81],from:[-326.8,294.5],note:'남가좌동 50-3 → 홍은3동 356-1. 일 미확인. 이전선은 통학 경로가 아닙니다. 현 OSM 윤곽은 당시 외형의 정확한 복원이 아닙니다.'},
   {id:'photo-2001',date:date(2001,9,13),title:'2001 항공사진 관측',category:'observation',sourceUrl:url('aerial'),position:[-326.8,294.5],note:'국소 전사 지붕 5개·운동장 2개·도로. 월 사이 형상 보간 없음.'},
   {id:'dorm',date:date(2006,2),title:'인문생활관 개관',category:'opening',sourceUrl:url('university'),position:[-303.27,211.55],buildingId:'462990142',note:'개관 월 확인, 일 미확인. 현 OSM 윤곽·표시 높이를 참고 모델로 사용; 준공 후 매월 외형은 미검증.'},
+  {id:'gym-library-transition',date:{year:2006,untilYear:2010,precision:'period'},title:'체육관 부지 → 도서관 · 전환 시기 미확인',category:'uncertain-transition',sourceUrl:'https://news.mju.ac.kr/news/articleView.html?idxno=13137',position:[-188,211],note:'2006 추정 복원과 2010 도서관 준공 사이의 조사 대상 구간일 뿐, 철거 시작/완료 기간을 확정한 것이 아닙니다. 사용자 체육관 사진은 촬영일 미상. 모델을 숨긴 월을 실제 철거 사건으로 해석하지 않습니다.'},
   {id:'nam-demolition',date:date(2010,2,11),title:'남가좌1 철거신고',category:'demolition-report',sourceUrl:projectSources.namgajwa,projectId:'namgajwa1',position:[-620,195],note:'신고 접수일이며 실제 철거 시작·완료일이 아닙니다. 개별 옛 건물은 좌표·철거일 미확인으로 생성·삭제하지 않음.'},
   {id:'library',date:date(2010,3),title:'방목학술정보관 개관',category:'opening',sourceUrl:url('library'),position:[-182.44,219.43],buildingId:'462990139',note:'개관 월 확인. 현 OSM 윤곽 참조, 정확한 당시 외형·이후 변경일 미확인.'},
   {id:'nam-construction',date:date(2016,5,12),title:'남가좌1 착공신고',category:'construction-report',sourceUrl:projectSources.namgajwa,projectId:'namgajwa1',position:[-620,195],note:'공식 착공신고 기록. 3D 격자는 공사 단계 기호이며 실제 건물·공정률·지구계가 아닙니다.'},
@@ -52,7 +53,7 @@ export const events:TimeEvent[]=[
   {id:'osm-current',date:date(2026,10,21),title:'현재 OSM 수집',category:'observation',sourceUrl:'https://www.openstreetmap.org/copyright',note:'건물 2,667개와 도로. 수집일은 건물 준공일·항공 촬영일이 아닙니다.'},
   ...additionalAerial.records.map(record=>({id:`aerial-record-${record.catalogYear}`,date:date(record.catalogYear),dateKind:'catalog' as const,title:`${record.catalogYear} 항공사진 ${record.previewViewed?'열람':'목록만 확인'} · 월 미확인`,category:'observation' as const,sourceUrl:additionalAerial.sourceUrl,note:`목록 연도이며 촬영 월·일은 미확인. ${record.observation}`})),
 ]
-export function dateLabel(d:EvidenceDate){return d.precision==='period'?`${d.year}년 이후 · 월/종료 미확인`:d.month?`${d.year}.${String(d.month).padStart(2,'0')}${d.day?'.'+String(d.day).padStart(2,'0'):' · 일 미확인'}`:`${d.year}년 · 월 미확인`}
+export function dateLabel(d:EvidenceDate){return d.precision==='period'?d.untilYear?`${d.year}~${d.untilYear} 비교 구간 · 사건 시기 미확인`:`${d.year}년 이후 · 월/종료 미확인`:d.month?`${d.year}.${String(d.month).padStart(2,'0')}${d.day?'.'+String(d.day).padStart(2,'0'):' · 일 미확인'}`:`${d.year}년 · 월 미확인`}
 export const eventMonth=(e:TimeEvent)=>monthIndex(e.date.year,e.date.month??1)
 export const eventsInMonth=(value:number)=>events.filter(e=>e.date.precision==='period'?false:e.date.month?eventMonth(e)===value:splitMonth(value).year===e.date.year)
 export function knownAfter(d:EvidenceDate,value:number){return d.precision==='period'?false:value>=monthIndex(d.year,d.month??12)+(d.month?0:1)}

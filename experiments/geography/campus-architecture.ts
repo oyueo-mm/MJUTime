@@ -1,23 +1,11 @@
 import * as THREE from 'three'
-import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js'
+import {Builder} from './architecture-batch'
+import {makeBangmokLibrary} from './bangmok'
 import {heightAt,type Point} from './spatial'
 import {campusDefinitions,integratedIds,localFootprint,presenceAt,facadeEvidence,type CampusFeature} from './integrated-evidence'
 
-/** One cached geometry batch per material/building; dates do not rebuild facades. */
-class Builder {
-  readonly group=new THREE.Group()
-  private parts=new Map<string,THREE.BufferGeometry[]>()
-  add(g:THREE.BufferGeometry,color:string){
-    if(g.index){const flat=g.toNonIndexed();g.dispose();g=flat}
-    if(!this.parts.has(color))this.parts.set(color,[])
-    this.parts.get(color)!.push(g)
-  }
-  box(w:number,h:number,d:number,x:number,y:number,z:number,color:string,angle=0){
-    const g=new THREE.BoxGeometry(w,h,d);g.rotateY(angle);g.translate(x,y,z);this.add(g,color)
-  }
-  finish(){for(const [color,parts] of this.parts){const g=mergeGeometries(parts);parts.forEach(p=>p.dispose());if(g)this.group.add(new THREE.Mesh(g,new THREE.MeshStandardMaterial({color,roughness:.82}))) }this.parts.clear();return this.group}
-}
 export function makeCampusBuilding(f:CampusFeature){
+  if(f.id==='462990139')return makeBangmokLibrary(f)
   const ring=localFootprint(f),height=f.properties.heightMetres!,floors=f.properties.above??Math.round(height/3),base=Math.max(...ring.map(p=>heightAt(...p)))
   const center:Point=[ring.reduce((s,p)=>s+p[0],0)/ring.length,ring.reduce((s,p)=>s+p[1],0)/ring.length]
   const dorm=f.id==='462990142',library=f.id==='462990139',main=f.id==='462990137',builder=new Builder()

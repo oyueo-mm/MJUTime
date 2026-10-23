@@ -45,31 +45,52 @@ export class MccScene {
       g.rotateX(-Math.PI/2);g.translate(0,bottom,0);this.add(g,color)
     }
     const slab=(p:number[][],y:number,color:string)=>volume(p,y,y+.35,color)
-    // Left hall rises four exposed tiers toward the street; right hall's lower
-    // two levels support a roof terrace. Central gap is an outdoor circulation.
-    for(const [x0,x1,left] of [[-435,-374,true],[-351,-239,false]] as const){
-      const p=piece(x0,x1,302,417)
-      volume(p,base,base+f*(left?4:2),'#819b9c')
-      for(let n=1;n<=(left?4:2);n++)slab(p,base+n*f,'#e2e4da')
-      slab(p,base+f*(left?4:2)+.35,'#8fa67c')
-      // Window/solid ratio is a photo-based simplification; not measured bays.
-      for(let n=0;n<(left?4:2);n++){
-        const front=piece(x0,x1,left?388:380,417)
-        volume(front,base+n*f+.65,base+(n+1)*f-.45,'#66868b')
+    const box=(w:number,h:number,d:number,x:number,y:number,z:number,color:string)=>{const g=new THREE.BoxGeometry(w,h,d);g.translate(x,y,z);this.add(g,color)}
+    // Street-facing lower terraces; Veritas steps back above the sunken court.
+    const west=piece(-435,-378,302,417),east=piece(-347,-239,302,417)
+    volume(west,base,base+2*f,'#58787e');volume(east,base,base+2*f,'#58787e')
+    const veritas=piece(-435,-378,302,365)
+    volume(veritas,base+2*f,base+4*f,'#58787e')
+    for(const p of [west,east])for(const n of [1,2])slab(p,base+n*f,'#eeedde')
+    for(const n of [3,4])slab(veritas,base+n*f,'#eeedde')
+    slab(west,base+2*f+.36,'#889b79');slab(veritas,base+4*f+.36,'#889b79')
+    slab(east,base+2*f+.36,'#9ba687')
+    // Narrow piers, shaded glazing and a solid roof edge rather than full glass slabs.
+    for(const [a,b,left] of [[-435,-378,true],[-347,-239,false]] as const){
+      const p=piece(a,b,302,417)
+      for(let i=0;i<p.length;i++){
+        const u=p[i],v=p[(i+1)%p.length],dx=v[0]-u[0],dz=v[1]-u[1],len=Math.hypot(dx,dz),angle=-Math.atan2(dz,dx)
+        const floors=left&&Math.max(u[1],v[1])<=366?4:2
+        for(let n=0;n<Math.ceil(len/4);n++){
+          const q=(n+.5)/Math.ceil(len/4),g=new THREE.BoxGeometry(.55,f*floors,.65)
+          g.rotateY(angle);g.translate(u[0]+dx*q,base+f*floors/2,u[1]+dz*q);this.add(g,'#dedfd0')
+        }
       }
     }
-    // Terraced setback on the upper part of the right hall, observed in photo.
-    const back=piece(-351,-239,303,334)
-    volume(back,base+f*2,base+f*3,'#8eaaaa');slab(back,base+f*3,'#8fa67c')
-    // Central stair and landings connect street -> sunken court -> campus.
-    for(let n=0;n<32;n++){
-      const z=410-n*2.75,y=base+n*(f*2/32)
-      const g=new THREE.BoxGeometry(22,.45,2.9);g.translate(-362,y,z);this.add(g,'#d6d9ce')
+    // Rooftop pavilion on the taller west hall (footprint and height estimated).
+    box(26,2.6,12,-409,base+4*f+1.8,324,'#9dacab');box(29,.4,14,-409,base+4*f+3.3,324,'#eeedde')
+    // Roof sports field confirmed by the official campus guide/photo; not a ground slab.
+    const fieldY=base+2*f+.76
+    slab(piece(-341,-265,308,358),fieldY,'#719377')
+    for(const x of [-337,-269])box(.2,.06,43,x,fieldY+.4,333,'#efeee0')
+    for(const z of [311.5,333,354.5])box(68,.06,.2,-303,fieldY+.4,z,'#efeee0')
+    const circle=new THREE.TorusGeometry(6,.1,4,40);circle.rotateX(-Math.PI/2);circle.translate(-303,fieldY+.43,333);this.add(circle,'#efeee0')
+    // Safety fence around the roof, kept in one material batch.
+    for(const z of [308,358]){for(let x=-342;x<=-264;x+=6)box(.15,3,.15,x,fieldY+1.9,z,'#9aaea6');box(78,.1,.1,-303,fieldY+3.4,z,'#9aaea6')}
+    // Two broad flights separated by the outdoor sunken landing. North is up-campus.
+    const stair=(z0:number,z1:number,y0:number,y1:number,count:number)=>{
+      for(let n=0;n<count;n++){const depth=(z0-z1)/count;box(27,.35,depth+.15,-362,y0+(y1-y0)*(n+.5)/count,z0-depth*(n+.5),'#e0dfd2')}
     }
-    // Roof-to-campus landing; its metric levels and width remain estimated.
-    slab(piece(-375,-350,303,325),base+f*2,'#d6d9ce')
-    // Interior retaining edges reveal the sunken level without a fictional cross.
-    for(const x of [-374,-351]){const g=new THREE.BoxGeometry(.7,f*2,85);g.translate(x,base+f,363);this.add(g,'#d6d9ce')}
+    stair(414,381,base+.2,base+f,18);box(27,.4,12,-362,base+f,375,'#e0dfd2')
+    stair(369,333,base+f,base+2*f,18)
+    const campusLevel=heightAt(-362,310)+.25
+    stair(333,310,base+2*f,campusLevel,12);box(27,.4,7,-362,campusLevel,307,'#e0dfd2')
+    // Sunken garden is the lower exterior court, not a fabricated enclosed floor.
+    slab(piece(-388,-305,389,417),base+.1,'#d7ceb7')
+    for(const x of [-382,-324]){box(9,.5,6,x,base+.55,403,'#c7c6b4');box(8,.25,5,x,base+.93,403,'#899b72')}
+    // Garden terraces/retaining edges flank the central circulation.
+    for(const x of [-378,-347])box(.65,f,41,x,base+f/2,390,'#dedfd0')
+    for(const x of [-376,-349]){box(.2,1,39,x,base+f+.55,350,'#a9b5aa');box(.15,.15,39,x,base+f+1.1,350,'#eef0e3')}
     for(const [color,geometries] of this.batches){
       const merged=mergeGeometries(geometries);geometries.forEach(g=>g.dispose())
       if(merged)this.group.add(new THREE.Mesh(merged,new THREE.MeshStandardMaterial({color,roughness:.85})))
@@ -99,5 +120,5 @@ export class MccScene {
     this.group.position.y=THREE.MathUtils.lerp(this.group.position.y,this.target?0:-18,1-Math.exp(-12*dt))
     this.group.visible=this.target===1||this.group.position.y> -17.9
   }
-  get debug(){return{active:this.active,levels:mccLevels,objects:this.group.children.length}}
+  get debug(){return{active:this.active,levels:mccLevels,objects:this.group.children.length,roofField:true,stairFlights:3,campusLanding:heightAt(-362,310)+.25}}
 }

@@ -1,0 +1,74 @@
+{
+  "environment": "Headless Chromium; frame caps 30 active / 12 settled; no physical device",
+  "audit": [
+    {
+      "year": 2002,
+      "camera": [
+        86.5,
+        364.9,
+        768
+      ],
+      "target": [
+        -305,
+        43,
+        275
+      ],
+      "markerLabelOverlaps": [],
+      "calls": 57,
+      "triangles": 142816,
+      "geometries": 78
+    },
+    {
+      "year": 2006,
+      "camera": [
+        86.5,
+        364.9,
+        768
+      ],
+      "target": [
+        -305,
+        43,
+        275
+      ],
+      "markerLabelOverlaps": [],
+      "calls": 63,
+      "triangles": 148076,
+      "geometries": 79
+    },
+    {
+      "year": 2010,
+      "camera": [
+        86.5,
+        364.9,
+        768
+      ],
+      "target": [
+        -305,
+        43,
+        275
+      ],
+      "markerLabelOverlaps": [],
+      "calls": 63,
+      "triangles": 160184,
+      "geometries": 88
+    },
+    {
+      "year": 2026,
+      "camera": [
+        86.5,
+        364.9,
+        768
+      ],
+      "target": [
+        -305,
+        43,
+        275
+      ],
+      "markerLabelOverlaps": [],
+      "calls": 61,
+      "triangles": 157608,
+      "geometries": 81
+    }
+  ],
+  "errors": []
+}
